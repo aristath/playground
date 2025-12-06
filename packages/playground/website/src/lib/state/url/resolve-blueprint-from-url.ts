@@ -211,6 +211,18 @@ function applyQueryOverridesToDeclaration(
 	query: URLSearchParams
 ): BlueprintV1Declaration {
 	/**
+	 * Allow overriding CMS type defined in a Blueprint via query params.
+	 * ?cms=drupal → Boot Drupal
+	 * ?cms=wordpress or omitted → Boot WordPress (default)
+	 */
+	const cmsParam = query.get('cms');
+	if (cmsParam === 'drupal') {
+		blueprint.cmsType = 'drupal';
+	} else if (cmsParam === 'wordpress') {
+		blueprint.cmsType = 'wordpress';
+	}
+
+	/**
 	 * Allow overriding PHP and WordPress versions defined in a Blueprint
 	 * via query params.
 	 */

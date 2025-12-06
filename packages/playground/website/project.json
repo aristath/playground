@@ -20,6 +20,8 @@
 					"cp -r ./remote/* ./wasm-wordpress-net/",
 					"cp -r ./website/* ./wasm-wordpress-net/",
 					"cp -r ./website-extras/* ./wasm-wordpress-net/",
+					"mkdir -p ./wasm-wordpress-net/drupal-9.5",
+					"cp ../../packages/playground/drupal-builds/public/drupal-9.5.zip ./wasm-wordpress-net/drupal-9.5/",
 					"cat ./remote/.htaccess ./website/.htaccess > ./wasm-wordpress-net/.htaccess",
 					"curl https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar > wasm-wordpress-net/wp-cli.phar",
 					"cat wasm-wordpress-net/wp-cli.phar | gzip -c -9 > wasm-wordpress-net/wp-cli.phar.gz"

@@ -84,11 +84,16 @@ export function bootSiteClient(
 			} as const;
 		}
 
-		let isWordPressInstalled = false;
+		const cmsType =
+			site.metadata.runtimeConfiguration.cmsType || 'wordpress';
+		let isCmsInstalled = false;
 		if (mountDescriptor) {
 			try {
-				isWordPressInstalled = await playgroundAvailableInOpfs(
-					await directoryHandleFromMountDevice(mountDescriptor.device)
+				isCmsInstalled = await playgroundAvailableInOpfs(
+					await directoryHandleFromMountDevice(
+						mountDescriptor.device
+					),
+					cmsType
 				);
 			} catch (e) {
 				logger.error(e);
@@ -114,7 +119,7 @@ export function bootSiteClient(
 		logTrackingEvent('load');
 
 		let blueprint: Blueprint;
-		if (isWordPressInstalled) {
+		if (isCmsInstalled) {
 			blueprint = {
 				preferredVersions: {
 					php: site.metadata.runtimeConfiguration.phpVersion,
@@ -140,7 +145,7 @@ export function bootSiteClient(
 				scope: site.slug,
 				blueprint,
 				experimentalBlueprintsV2Runner:
-					!isWordPressInstalled &&
+					!isCmsInstalled &&
 					new URLSearchParams(window.location.search).get(
 						'experimental-blueprints-v2-runner'
 					) === 'yes',
@@ -160,7 +165,7 @@ export function bootSiteClient(
 							},
 						]
 					: [],
-				shouldInstallWordPress: !isWordPressInstalled,
+				shouldInstallWordPress: !isCmsInstalled,
 				corsProxy: corsProxyUrl,
 				gitAdditionalHeadersCallback: createGitAuthHeaders(),
 			});
@@ -267,15 +272,17 @@ export function bootSiteClient(
  * either abstract FS operations or isomorphic PHP FS operations.
  * (we can't just use Node.js require('fs') in the browser, for example)
  *
- * @TODO: Reuse the "isWordPressInstalled" logic implemented in the boot protocol.
+ * @TODO: Reuse the "isCmsInstalled" logic implemented in the boot protocol.
  *        Perhaps mount OPFS first, and only then check for the presence of the
  *        WordPress installation? Or, if not, perhaps implement a shared file access
  * 		  abstraction that can be used both with the PHP module and OPFS directory handles?
  *
  * @param dirHandle
+ * @param cmsType The type of CMS to check for. Defaults to 'wordpress'.
  */
 export async function playgroundAvailableInOpfs(
-	dirHandle: FileSystemDirectoryHandle
+	dirHandle: FileSystemDirectoryHandle,
+	cmsType: 'wordpress' | 'drupal' = 'wordpress'
 ) {
 	// Run this loop just to trigger an exception if the directory handle is no good.
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -283,9 +290,13 @@ export async function playgroundAvailableInOpfs(
 		break;
 	}
 
+	if (cmsType === 'drupal') {
+		return drupalAvailableInOpfs(dirHandle);
+	}
+
 	try {
 		/**
-		 * Assume it's a Playground directory if these files exist:
+		 * Assume it's a WordPress Playground directory if these files exist:
 		 * - wp-config.php
 		 * - wp-content/database/.ht.sqlite
 		 */
@@ -297,6 +308,37 @@ export async function playgroundAvailableInOpfs(
 			create: false,
 		});
 		await database.getFileHandle('.ht.sqlite', { create: false });
+	} catch {
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Check if the given directory handle contains an installed Drupal site.
+ *
+ * @param dirHandle
+ */
+async function drupalAvailableInOpfs(
+	dirHandle: FileSystemDirectoryHandle
+): Promise<boolean> {
+	try {
+		/**
+		 * Assume it's a Drupal Playground directory if these files exist:
+		 * - sites/default/settings.php
+		 * - sites/default/files/.ht.sqlite
+		 */
+		const sites = await dirHandle.getDirectoryHandle('sites', {
+			create: false,
+		});
+		const defaultSite = await sites.getDirectoryHandle('default', {
+			create: false,
+		});
+		await defaultSite.getFileHandle('settings.php', { create: false });
+		const files = await defaultSite.getDirectoryHandle('files', {
+			create: false,
+		});
+		await files.getFileHandle('.ht.sqlite', { create: false });
 	} catch {
 		return false;
 	}

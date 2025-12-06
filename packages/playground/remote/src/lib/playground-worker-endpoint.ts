@@ -56,7 +56,11 @@ export interface MountDescriptor {
 }
 
 export type WorkerBootOptions = {
+	/** The CMS type to boot: 'wordpress' (default) or 'drupal' */
+	cmsType?: 'wordpress' | 'drupal';
 	wpVersion?: string;
+	/** Drupal version to use when cmsType is 'drupal' */
+	drupalVersion?: string;
 	sqliteDriverVersion?: string;
 	phpVersion?: SupportedPHPVersion;
 	sapiName?: string;
@@ -365,6 +369,22 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 			staticAssetsDirectory: this.loadedWordPressVersion
 				? wpVersionToStaticAssetsDirectory(this.loadedWordPressVersion)
 				: undefined,
+		};
+	}
+
+	/**
+	 * @returns CMS module details, including the static assets directory and CMS type.
+	 * This method is used by the service worker to determine which rewrite rules to apply.
+	 */
+	async getCMSModuleDetails(): Promise<{
+		staticAssetsDirectory: string | undefined;
+		cmsType: 'wordpress' | 'drupal';
+	}> {
+		return {
+			staticAssetsDirectory: this.loadedWordPressVersion
+				? wpVersionToStaticAssetsDirectory(this.loadedWordPressVersion)
+				: undefined,
+			cmsType: 'wordpress',
 		};
 	}
 

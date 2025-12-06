@@ -110,6 +110,7 @@ import {
 	broadcastMessageExpectReply,
 } from '@php-wasm/web-service-worker';
 import { wordPressRewriteRules } from '@wp-playground/wordpress';
+import { drupalRewriteRules } from '@wp-playground/drupal';
 import { reportServiceWorkerMetrics } from '@php-wasm/logger';
 
 import {
@@ -332,12 +333,18 @@ async function handleScopedRequest(event: FetchEvent, scope: string) {
 		workerResponse.status === 404 &&
 		workerResponse.headers.get('x-backfill-from') === 'remote-host'
 	) {
-		const { staticAssetsDirectory } = await getScopedWpDetails(scope!);
+		const { staticAssetsDirectory, cmsType } = await getScopedCmsDetails(
+			scope!
+		);
 		if (!staticAssetsDirectory) {
 			const plain404Response = workerResponse.clone();
 			plain404Response.headers.delete('x-backfill-from');
 			return plain404Response;
 		}
+
+		// Select the appropriate rewrite rules based on CMS type
+		const rewriteRules =
+			cmsType === 'drupal' ? drupalRewriteRules : wordPressRewriteRules;
 
 		// If we get a 404 for a static file, try to fetch it from
 		// the from the static assets directory at the remote server.
@@ -345,7 +352,7 @@ async function handleScopedRequest(event: FetchEvent, scope: string) {
 		const resolvedUrl = removeURLScope(requestedUrl);
 		resolvedUrl.pathname = applyRewriteRules(
 			resolvedUrl.pathname,
-			wordPressRewriteRules
+			rewriteRules
 		);
 		if (
 			// Vite dev server requests
@@ -517,20 +524,21 @@ function emptyHtml() {
 	);
 }
 
-type WPModuleDetails = {
+type CMSModuleDetails = {
 	staticAssetsDirectory?: string;
+	cmsType?: 'wordpress' | 'drupal';
 };
 
-const scopeToWpModule: Record<string, WPModuleDetails> = {};
-async function getScopedWpDetails(scope: string): Promise<WPModuleDetails> {
-	if (!scopeToWpModule[scope]) {
+const scopeToCmsModule: Record<string, CMSModuleDetails> = {};
+async function getScopedCmsDetails(scope: string): Promise<CMSModuleDetails> {
+	if (!scopeToCmsModule[scope]) {
 		const requestId = await broadcastMessageExpectReply(
 			{
-				method: 'getWordPressModuleDetails',
+				method: 'getCMSModuleDetails',
 			},
 			scope
 		);
-		scopeToWpModule[scope] = await awaitReply(self, requestId);
+		scopeToCmsModule[scope] = await awaitReply(self, requestId);
 	}
-	return scopeToWpModule[scope];
+	return scopeToCmsModule[scope];
 }

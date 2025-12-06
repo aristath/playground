@@ -9,8 +9,13 @@ import {
 	LatestSqliteDriverVersion,
 	MinifiedWordPressVersionsList,
 } from '@wp-playground/wordpress-builds';
+import {
+	getDrupalModuleDetails,
+	LatestDrupalVersion,
+} from '@wp-playground/drupal-builds';
 import { directoryHandleFromMountDevice } from '@wp-playground/storage';
 import { bootWordPress } from '@wp-playground/wordpress';
+import { bootDrupal } from '@wp-playground/drupal';
 import { createDirectoryHandleMountHandler } from '@php-wasm/web';
 import type { PHP } from '@php-wasm/universal';
 /* @ts-ignore */
@@ -30,10 +35,14 @@ class ArtifactExpiredError extends Error {
 }
 
 class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
+	private currentCmsType: 'wordpress' | 'drupal' = 'wordpress';
+
 	override async boot({
 		scope,
 		mounts = [],
+		cmsType = 'wordpress',
 		wpVersion = LatestMinifiedWordPressVersion,
+		drupalVersion = LatestDrupalVersion,
 		sqliteDriverVersion = LatestSqliteDriverVersion,
 		phpVersion,
 		sapiName = 'cli',
@@ -50,6 +59,7 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		}
 		this.booted = true;
 		this.scope = scope;
+		this.currentCmsType = cmsType;
 
 		try {
 			// eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -67,121 +77,29 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 				phpVersion: phpVersion!,
 			});
 
-			this.requestedWordPressVersion =
-				wpVersion === 'nightly' ? 'trunk' : wpVersion;
-			wpVersion = MinifiedWordPressVersionsList.includes(
-				this.requestedWordPressVersion
-			)
-				? this.requestedWordPressVersion
-				: LatestMinifiedWordPressVersion;
-
-			const wpDetails = getWordPressModuleDetails(wpVersion);
-			let wordPressRequest: Promise<Response> | null = null;
-			if (shouldInstallWordPress) {
-				if (this.requestedWordPressVersion!.startsWith('http')) {
-					wordPressRequest = this.downloadMonitor
-						.monitorFetch(
-							fetch(this.requestedWordPressVersion as string)
-						)
-						.then((response) => {
-							if (response.ok) {
-								return response;
-							}
-							let json: any = null;
-							return response.json().then(
-								(parsedJson) => {
-									json = parsedJson;
-									if (
-										json &&
-										json.error === 'artifact_expired'
-									) {
-										throw new ArtifactExpiredError();
-									}
-									throw new Error(
-										`Failed to download WordPress ZIP (HTTP ${response.status})`
-									);
-								},
-								() => {
-									throw new Error(
-										`Failed to download WordPress ZIP (HTTP ${response.status})`
-									);
-								}
-							);
-						});
-				} else {
-					const downloadUrl = maybeProxyUrl(
-						wpDetails.url,
-						corsProxyUrl as string | undefined
-					);
-					this.downloadMonitor.expectAssets({
-						[downloadUrl]: wpDetails.size,
-					});
-					wordPressRequest = this.downloadMonitor.monitorFetch(
-						fetch(downloadUrl)
-					);
-				}
+			if (cmsType === 'drupal') {
+				// Boot Drupal
+				await this.bootDrupalCMS({
+					requestHandler,
+					siteUrl,
+					drupalVersion,
+					mounts,
+					endpoint,
+					shouldInstall: shouldInstallWordPress,
+				});
+			} else {
+				// Boot WordPress (default)
+				await this.bootWordPressCMS({
+					requestHandler,
+					siteUrl,
+					wpVersion,
+					sqliteDriverVersion,
+					mounts,
+					endpoint,
+					shouldInstall: shouldInstallWordPress,
+					corsProxyUrl,
+				});
 			}
-
-			let sqliteIntegrationRequest: Promise<Response> | null = null;
-			const sqliteDriverModuleDetails = getSqliteDriverModuleDetails(
-				sqliteDriverVersion!
-			);
-			this.downloadMonitor.expectAssets({
-				[sqliteDriverModuleDetails.url]: sqliteDriverModuleDetails.size,
-			});
-			sqliteIntegrationRequest = this.downloadMonitor.monitorFetch(
-				fetch(sqliteDriverModuleDetails.url)
-			);
-
-			await bootWordPress(requestHandler, {
-				siteUrl,
-				constants: shouldInstallWordPress
-					? {
-							WP_DEBUG: true,
-							WP_DEBUG_LOG: true,
-							WP_DEBUG_DISPLAY: false,
-							AUTH_KEY: randomString(40),
-							SECURE_AUTH_KEY: randomString(40),
-							LOGGED_IN_KEY: randomString(40),
-							NONCE_KEY: randomString(40),
-							AUTH_SALT: randomString(40),
-							SECURE_AUTH_SALT: randomString(40),
-							LOGGED_IN_SALT: randomString(40),
-							NONCE_SALT: randomString(40),
-						}
-					: {},
-				// Do not await the WordPress download or the sqlite integration download.
-				// Let bootWordPress start the PHP runtime download first, and then await
-				// all the ZIP files right before they're used.
-				wordPressZip: shouldInstallWordPress
-					? wordPressRequest!
-							.then((r) => r.blob())
-							.then((b) => new File([b], 'wp.zip'))
-					: undefined,
-				sqliteIntegrationPluginZip: sqliteIntegrationRequest
-					? sqliteIntegrationRequest
-							.then((r) => r.blob())
-							.then((b) => new File([b], 'sqlite.zip'))
-					: undefined,
-				hooks: {
-					async beforeWordPressFiles(php: PHP) {
-						for (const mount of mounts) {
-							const handle = await directoryHandleFromMountDevice(
-								mount.device
-							);
-							const unmount = await php.mount(
-								mount.mountpoint,
-								createDirectoryHandleMountHandler(handle, {
-									initialSync: {
-										direction: mount.initialSyncDirection,
-									},
-								})
-							);
-							endpoint.unmounts[mount.mountpoint] = unmount;
-						}
-					},
-				},
-			});
 
 			await this.finalizeAfterBoot(
 				requestHandler,
@@ -193,6 +111,200 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 			setAPIError(e as Error);
 			throw e as Error;
 		}
+	}
+
+	private async bootWordPressCMS({
+		requestHandler,
+		siteUrl,
+		wpVersion,
+		sqliteDriverVersion,
+		mounts,
+		endpoint,
+		shouldInstall,
+		corsProxyUrl,
+	}: {
+		requestHandler: any;
+		siteUrl: string;
+		wpVersion: string;
+		sqliteDriverVersion: string;
+		mounts: any[];
+		endpoint: PlaygroundWorkerEndpointBlueprintsV1;
+		shouldInstall: boolean;
+		corsProxyUrl?: string;
+	}) {
+		this.requestedWordPressVersion =
+			wpVersion === 'nightly' ? 'trunk' : wpVersion;
+		wpVersion = MinifiedWordPressVersionsList.includes(
+			this.requestedWordPressVersion
+		)
+			? this.requestedWordPressVersion
+			: LatestMinifiedWordPressVersion;
+
+		const wpDetails = getWordPressModuleDetails(wpVersion);
+		let wordPressRequest: Promise<Response> | null = null;
+		if (shouldInstall) {
+			if (this.requestedWordPressVersion!.startsWith('http')) {
+				wordPressRequest = this.downloadMonitor
+					.monitorFetch(
+						fetch(this.requestedWordPressVersion as string)
+					)
+					.then((response) => {
+						if (response.ok) {
+							return response;
+						}
+						let json: any = null;
+						return response.json().then(
+							(parsedJson) => {
+								json = parsedJson;
+								if (json && json.error === 'artifact_expired') {
+									throw new ArtifactExpiredError();
+								}
+								throw new Error(
+									`Failed to download WordPress ZIP (HTTP ${response.status})`
+								);
+							},
+							() => {
+								throw new Error(
+									`Failed to download WordPress ZIP (HTTP ${response.status})`
+								);
+							}
+						);
+					});
+			} else {
+				const downloadUrl = maybeProxyUrl(
+					wpDetails.url,
+					corsProxyUrl as string | undefined
+				);
+				this.downloadMonitor.expectAssets({
+					[downloadUrl]: wpDetails.size,
+				});
+				wordPressRequest = this.downloadMonitor.monitorFetch(
+					fetch(downloadUrl)
+				);
+			}
+		}
+
+		let sqliteIntegrationRequest: Promise<Response> | null = null;
+		const sqliteDriverModuleDetails =
+			getSqliteDriverModuleDetails(sqliteDriverVersion);
+		this.downloadMonitor.expectAssets({
+			[sqliteDriverModuleDetails.url]: sqliteDriverModuleDetails.size,
+		});
+		sqliteIntegrationRequest = this.downloadMonitor.monitorFetch(
+			fetch(sqliteDriverModuleDetails.url)
+		);
+
+		await bootWordPress(requestHandler, {
+			siteUrl,
+			constants: shouldInstall
+				? {
+						WP_DEBUG: true,
+						WP_DEBUG_LOG: true,
+						WP_DEBUG_DISPLAY: false,
+						AUTH_KEY: randomString(40),
+						SECURE_AUTH_KEY: randomString(40),
+						LOGGED_IN_KEY: randomString(40),
+						NONCE_KEY: randomString(40),
+						AUTH_SALT: randomString(40),
+						SECURE_AUTH_SALT: randomString(40),
+						LOGGED_IN_SALT: randomString(40),
+						NONCE_SALT: randomString(40),
+					}
+				: {},
+			wordPressZip: shouldInstall
+				? wordPressRequest!
+						.then((r) => r.blob())
+						.then((b) => new File([b], 'wp.zip'))
+				: undefined,
+			sqliteIntegrationPluginZip: sqliteIntegrationRequest
+				? sqliteIntegrationRequest
+						.then((r) => r.blob())
+						.then((b) => new File([b], 'sqlite.zip'))
+				: undefined,
+			hooks: {
+				async beforeWordPressFiles(php: PHP) {
+					for (const mount of mounts) {
+						const handle = await directoryHandleFromMountDevice(
+							mount.device
+						);
+						const unmount = await php.mount(
+							mount.mountpoint,
+							createDirectoryHandleMountHandler(handle, {
+								initialSync: {
+									direction: mount.initialSyncDirection,
+								},
+							})
+						);
+						endpoint.unmounts[mount.mountpoint] = unmount;
+					}
+				},
+			},
+		});
+	}
+
+	private async bootDrupalCMS({
+		requestHandler,
+		siteUrl,
+		drupalVersion,
+		mounts,
+		endpoint,
+		shouldInstall,
+	}: {
+		requestHandler: any;
+		siteUrl: string;
+		drupalVersion: string;
+		mounts: any[];
+		endpoint: PlaygroundWorkerEndpointBlueprintsV1;
+		shouldInstall: boolean;
+	}) {
+		const drupalDetails = getDrupalModuleDetails(drupalVersion);
+		let drupalRequest: Promise<Response> | null = null;
+
+		if (shouldInstall) {
+			this.downloadMonitor.expectAssets({
+				[drupalDetails.url]: drupalDetails.size,
+			});
+			drupalRequest = this.downloadMonitor.monitorFetch(
+				fetch(drupalDetails.url)
+			);
+		}
+
+		await bootDrupal(requestHandler, {
+			siteUrl,
+			drupalZip: shouldInstall
+				? drupalRequest!
+						.then((r) => r.blob())
+						.then((b) => new File([b], 'drupal.zip'))
+				: undefined,
+			hooks: {
+				async beforeDrupalFiles(php: PHP) {
+					for (const mount of mounts) {
+						const handle = await directoryHandleFromMountDevice(
+							mount.device
+						);
+						const unmount = await php.mount(
+							mount.mountpoint,
+							createDirectoryHandleMountHandler(handle, {
+								initialSync: {
+									direction: mount.initialSyncDirection,
+								},
+							})
+						);
+						endpoint.unmounts[mount.mountpoint] = unmount;
+					}
+				},
+			},
+		});
+	}
+
+	override async getCMSModuleDetails() {
+		if (this.currentCmsType === 'drupal') {
+			return {
+				staticAssetsDirectory: undefined,
+				cmsType: 'drupal' as const,
+			};
+		}
+		return super.getCMSModuleDetails();
 	}
 }
 

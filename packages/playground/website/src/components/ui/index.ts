@@ -101,4 +101,4 @@ export {
 export { useMediaQuery } from './hooks';
 
 // Icons
-export { cog, CogIcon, close, page, Icon } from './icons';
+export { cog, CogIcon, close, page, details, Icon } from './icons';

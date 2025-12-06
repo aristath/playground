@@ -1,5 +1,4 @@
-import { MenuItem } from '@wordpress/components';
-import { details } from '@wordpress/icons';
+import { MenuItem, details } from '../ui';
 
 import { useDispatch } from 'react-redux';
 import type { PlaygroundDispatch } from '../../lib/state/redux/store';

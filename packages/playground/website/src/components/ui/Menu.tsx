@@ -20,6 +20,8 @@ export interface MenuItemProps {
 	onClick?: () => void;
 	/** Icon to display before the label */
 	icon?: React.ReactNode;
+	/** Icon position (WordPress compatibility) */
+	iconPosition?: 'left' | 'right';
 	/** Whether the item is destructive (red) */
 	isDestructive?: boolean;
 	/** Whether the item is disabled */
@@ -34,11 +36,16 @@ export interface MenuItemProps {
 	className?: string;
 	/** Role attribute for accessibility */
 	role?: string;
+	/** Aria label for accessibility */
+	'aria-label'?: string;
+	/** Data attribute for testing */
+	'data-cy'?: string;
 }
 
 export function MenuItem({
 	onClick,
 	icon,
+	iconPosition = 'left',
 	isDestructive = false,
 	disabled = false,
 	shortcut,
@@ -46,17 +53,22 @@ export function MenuItem({
 	children,
 	className,
 	role = 'menuitem',
+	'aria-label': ariaLabel,
+	'data-cy': dataCy,
 }: MenuItemProps) {
 	return (
 		<EvergreenMenu.Item
 			onSelect={onClick}
-			icon={icon as any}
+			icon={iconPosition === 'left' ? (icon as any) : undefined}
 			intent={isDestructive ? 'danger' : 'none'}
 			disabled={disabled}
 			secondaryText={shortcut || info}
 			className={classNames(css.menuItem, className)}
+			aria-label={ariaLabel}
+			data-cy={dataCy}
 		>
 			{children}
+			{iconPosition === 'right' && icon}
 		</EvergreenMenu.Item>
 	);
 }

@@ -1,0 +1,72 @@
+{
+	"name": "playground-drupal-builds",
+	"$schema": "../../../node_modules/nx/schemas/project-schema.json",
+	"sourceRoot": "packages/playground/drupal-builds/src",
+	"projectType": "library",
+	"targets": {
+		"build": {
+			"executor": "nx:noop",
+			"dependsOn": ["build:package-json"]
+		},
+		"build:package-json": {
+			"executor": "@wp-playground/nx-extensions:package-json",
+			"options": {
+				"tsConfig": "packages/playground/drupal-builds/tsconfig.lib.json",
+				"outputPath": "dist/packages/playground/drupal-builds",
+				"buildTarget": "playground-drupal-builds:build:bundle:production"
+			},
+			"dependsOn": ["build:bundle"]
+		},
+		"build:bundle": {
+			"executor": "@nx/vite:build",
+			"outputs": ["{options.outputPath}"],
+			"defaultConfiguration": "production",
+			"emptyOutDir": true,
+			"options": {
+				"outputPath": "dist/packages/playground/drupal-builds"
+			},
+			"configurations": {
+				"development": {
+					"mode": "development"
+				},
+				"production": {
+					"mode": "production"
+				}
+			},
+			"dependsOn": ["^build", "build:clear-dist-dir"]
+		},
+		"build:clear-dist-dir": {
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": ["rm -rf dist/packages/playground/drupal-builds"]
+			}
+		},
+		"test": {
+			"executor": "nx:noop",
+			"dependsOn": ["test:vite"]
+		},
+		"test:vite": {
+			"executor": "@nx/vite:test",
+			"outputs": [
+				"{workspaceRoot}/coverage/packages/playground/drupal-builds"
+			],
+			"options": {
+				"passWithNoTests": true,
+				"reportsDirectory": "../../../coverage/packages/playground/drupal-builds"
+			}
+		},
+		"lint": {
+			"executor": "@nx/linter:eslint",
+			"outputs": ["{options.outputFile}"],
+			"options": {
+				"useFlatConfig": false,
+				"lintFilePatterns": [
+					"packages/playground/drupal-builds/**/*.ts",
+					"packages/playground/drupal-builds/package.json"
+				],
+				"maxWarnings": 0
+			}
+		}
+	},
+	"tags": []
+}

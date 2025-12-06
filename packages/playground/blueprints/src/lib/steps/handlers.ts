@@ -28,3 +28,6 @@ export { defineWpConfigConsts } from './define-wp-config-consts';
 export { zipWpContent } from './zip-wp-content';
 export { wpCLI } from './wp-cli';
 export { setSiteLanguage } from './set-site-language';
+export { runDrush } from './run-drush';
+export { installDrupalModule } from './install-drupal-module';
+export { installDrupalTheme } from './install-drupal-theme';

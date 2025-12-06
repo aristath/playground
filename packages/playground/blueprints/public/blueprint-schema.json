@@ -5,6 +5,10 @@
 		"BlueprintV1Declaration": {
 			"type": "object",
 			"properties": {
+				"cmsType": {
+					"$ref": "#/definitions/CMSType",
+					"description": "The CMS type to run in the Playground. Defaults to 'wordpress' for backwards compatibility."
+				},
 				"landingPage": {
 					"type": "string",
 					"description": "The URL to navigate to after the blueprint has been run."
@@ -172,13 +176,18 @@
 			"additionalProperties": false,
 			"description": "The Blueprint declaration, typically stored in a blueprint.json file."
 		},
+		"CMSType": {
+			"type": "string",
+			"enum": ["wordpress", "drupal"],
+			"description": "The type of CMS to run in the Playground. Defaults to 'wordpress' for backwards compatibility."
+		},
 		"SupportedPHPVersion": {
 			"type": "string",
 			"enum": ["8.4", "8.3", "8.2", "8.1", "8.0", "7.4", "7.3", "7.2"]
 		},
 		"ExtraLibrary": {
 			"type": "string",
-			"const": "wp-cli"
+			"enum": ["wp-cli", "drush"]
 		},
 		"PHPConstants": {
 			"type": "object",
@@ -1319,6 +1328,136 @@
 						}
 					},
 					"required": ["language", "step"]
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"progress": {
+							"type": "object",
+							"properties": {
+								"weight": {
+									"type": "number"
+								},
+								"caption": {
+									"type": "string"
+								}
+							},
+							"additionalProperties": false
+						},
+						"step": {
+							"type": "string",
+							"const": "runDrush",
+							"description": "The step identifier."
+						},
+						"command": {
+							"anyOf": [
+								{
+									"type": "string"
+								},
+								{
+									"type": "array",
+									"items": {
+										"type": "string"
+									}
+								}
+							],
+							"description": "The Drush command to run."
+						},
+						"drushPath": {
+							"type": "string",
+							"description": "drush.phar path"
+						}
+					},
+					"required": ["command", "step"]
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"progress": {
+							"type": "object",
+							"properties": {
+								"weight": {
+									"type": "number"
+								},
+								"caption": {
+									"type": "string"
+								}
+							},
+							"additionalProperties": false
+						},
+						"ifAlreadyInstalled": {
+							"type": "string",
+							"enum": ["overwrite", "skip", "error"],
+							"description": "What to do if the asset already exists."
+						},
+						"step": {
+							"type": "string",
+							"const": "installDrupalModule",
+							"description": "The step identifier."
+						},
+						"moduleData": {
+							"anyOf": [
+								{
+									"$ref": "#/definitions/FileReference"
+								},
+								{
+									"$ref": "#/definitions/DirectoryReference"
+								}
+							],
+							"description": "The module files to install. It can be a module zip file or a directory containing all the module files at its root."
+						},
+						"options": {
+							"$ref": "#/definitions/InstallDrupalModuleOptions",
+							"description": "Optional installation options."
+						}
+					},
+					"required": ["moduleData", "step"]
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"progress": {
+							"type": "object",
+							"properties": {
+								"weight": {
+									"type": "number"
+								},
+								"caption": {
+									"type": "string"
+								}
+							},
+							"additionalProperties": false
+						},
+						"ifAlreadyInstalled": {
+							"type": "string",
+							"enum": ["overwrite", "skip", "error"],
+							"description": "What to do if the asset already exists."
+						},
+						"step": {
+							"type": "string",
+							"const": "installDrupalTheme",
+							"description": "The step identifier."
+						},
+						"themeData": {
+							"anyOf": [
+								{
+									"$ref": "#/definitions/FileReference"
+								},
+								{
+									"$ref": "#/definitions/DirectoryReference"
+								}
+							],
+							"description": "The theme files to install. It can be a theme zip file or a directory containing all the theme files at its root."
+						},
+						"options": {
+							"$ref": "#/definitions/InstallDrupalThemeOptions",
+							"description": "Optional installation options."
+						}
+					},
+					"required": ["step", "themeData"]
 				}
 			]
 		},
@@ -1678,6 +1817,34 @@
 				},
 				"adminPassword": {
 					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+		"InstallDrupalModuleOptions": {
+			"type": "object",
+			"properties": {
+				"activate": {
+					"type": "boolean",
+					"description": "Whether to enable the module after installing it. Note: This requires Drush to be available."
+				},
+				"targetFolderName": {
+					"type": "string",
+					"description": "The name of the folder to install the module to. Defaults to guessing from moduleData."
+				}
+			},
+			"additionalProperties": false
+		},
+		"InstallDrupalThemeOptions": {
+			"type": "object",
+			"properties": {
+				"activate": {
+					"type": "boolean",
+					"description": "Whether to set this theme as the default after installing it. Note: This requires Drush to be available."
+				},
+				"targetFolderName": {
+					"type": "string",
+					"description": "The name of the folder to install the theme to. Defaults to guessing from themeData."
 				}
 			},
 			"additionalProperties": false

@@ -2,11 +2,13 @@ import type { SupportedPHPVersion } from '@php-wasm/universal';
 import type { StepDefinition } from '../steps';
 import type { FileReference } from './resources';
 import type { StreamedFile } from '@php-wasm/stream-compression';
-import type { BlueprintBundle } from '../types';
+import type { BlueprintBundle, CMSType } from '../types';
 
 export type ExtraLibrary =
 	// Install WP-CLI during boot.
-	'wp-cli';
+	| 'wp-cli'
+	// Install Drush during boot (for Drupal).
+	| 'drush';
 
 export type PHPConstants = Record<string, string | boolean | number>;
 
@@ -18,6 +20,11 @@ export type BlueprintV1 = BlueprintV1Declaration | BlueprintBundle;
  * The Blueprint declaration, typically stored in a blueprint.json file.
  */
 export type BlueprintV1Declaration = {
+	/**
+	 * The CMS type to run in the Playground.
+	 * Defaults to 'wordpress' for backwards compatibility.
+	 */
+	cmsType?: CMSType;
 	/**
 	 * The URL to navigate to after the blueprint has been run.
 	 */

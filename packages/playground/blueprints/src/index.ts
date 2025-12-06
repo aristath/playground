@@ -12,6 +12,7 @@ export type {
 	BlueprintBundle,
 	BlueprintDeclaration,
 	RuntimeConfiguration,
+	CMSType,
 } from './lib/types';
 export { BlueprintReflection } from './lib/reflection';
 export {

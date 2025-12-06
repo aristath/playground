@@ -2,7 +2,9 @@ import { RecommendedPHPVersion } from '@wp-playground/common';
 import { BlueprintReflection } from './reflection';
 import type { Blueprint, RuntimeConfiguration } from './types';
 import { compileBlueprintV1 } from './v1/compile';
-import type { BlueprintV1 } from './v1/types';
+import type { BlueprintV1, BlueprintV1Declaration } from './v1/types';
+import { isBlueprintBundle } from './v1/compile';
+import { getBlueprintDeclaration } from './v1/compile';
 
 export async function resolveRuntimeConfiguration(
 	blueprint: Blueprint
@@ -13,9 +15,24 @@ export async function resolveRuntimeConfiguration(
 			blueprint as BlueprintV1
 		);
 
+		// Extract cmsType from the blueprint declaration
+		let cmsType: 'wordpress' | 'drupal' = 'wordpress';
+		if (isBlueprintBundle(blueprint as BlueprintV1)) {
+			const declaration = await getBlueprintDeclaration(
+				blueprint as BlueprintV1
+			);
+			cmsType = declaration.cmsType || 'wordpress';
+		} else {
+			cmsType =
+				(blueprint as BlueprintV1Declaration).cmsType || 'wordpress';
+		}
+
 		return {
+			cmsType,
 			wpVersion: compiledBlueprint.versions.wp,
 			phpVersion: compiledBlueprint.versions.php,
+			// For Drupal, use the default version (we'll add version selection later)
+			drupalVersion: cmsType === 'drupal' ? '9.5' : undefined,
 			intl: compiledBlueprint.features.intl,
 			networking: compiledBlueprint.features.networking,
 			extraLibraries: compiledBlueprint.extraLibraries,
@@ -33,6 +50,7 @@ export async function resolveRuntimeConfiguration(
 	} else {
 		// @TODO: actually compute the runtime configuration based on the resolved Blueprint v2
 		return {
+			cmsType: 'wordpress',
 			phpVersion: RecommendedPHPVersion,
 			wpVersion: 'latest',
 			intl: false,

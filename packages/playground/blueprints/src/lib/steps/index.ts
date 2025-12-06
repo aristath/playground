@@ -36,6 +36,15 @@ import type { EnableMultisiteStep } from './enable-multisite';
 import type { WPCLIStep } from './wp-cli';
 import type { ResetDataStep } from './reset-data';
 import type { SetSiteLanguageStep } from './set-site-language';
+import type { RunDrushStep } from './run-drush';
+import type {
+	InstallDrupalModuleStep,
+	InstallDrupalModuleOptions,
+} from './install-drupal-module';
+import type {
+	InstallDrupalThemeStep,
+	InstallDrupalThemeOptions,
+} from './install-drupal-theme';
 
 export type Step = GenericStep<FileReference, DirectoryReference>;
 export type StepDefinition = Step & {
@@ -80,7 +89,10 @@ export type GenericStep<FileResource, DirectoryResource> =
 	| WriteFileStep<FileResource>
 	| WriteFilesStep<DirectoryResource>
 	| WPCLIStep
-	| SetSiteLanguageStep;
+	| SetSiteLanguageStep
+	| RunDrushStep
+	| InstallDrupalModuleStep<FileResource, DirectoryResource>
+	| InstallDrupalThemeStep<FileResource, DirectoryResource>;
 
 export type {
 	ActivatePluginStep,
@@ -115,6 +127,11 @@ export type {
 	WriteFilesStep,
 	WPCLIStep,
 	SetSiteLanguageStep,
+	RunDrushStep,
+	InstallDrupalModuleStep,
+	InstallDrupalModuleOptions,
+	InstallDrupalThemeStep,
+	InstallDrupalThemeOptions,
 };
 
 /**
@@ -127,7 +144,7 @@ export type StepProgress = {
 
 export type StepHandler<
 	S extends GenericStep<File, Directory>,
-	Return = any
+	Return = any,
 > = (
 	/**
 	 * A PHP instance or Playground client.

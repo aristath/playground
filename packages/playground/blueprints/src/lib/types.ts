@@ -22,9 +22,27 @@ export type BlueprintDeclaration =
 	| BlueprintV2Declaration;
 export type Blueprint = BlueprintV1 | BlueprintV2;
 
+/**
+ * The type of CMS to run in the Playground.
+ * Defaults to 'wordpress' for backwards compatibility.
+ */
+export type CMSType = 'wordpress' | 'drupal';
+
 export interface RuntimeConfiguration {
+	/**
+	 * The CMS type to run.
+	 * @default 'wordpress'
+	 */
+	cmsType?: CMSType;
 	phpVersion: SupportedPHPVersion;
+	/**
+	 * WordPress version (when cmsType is 'wordpress').
+	 */
 	wpVersion: string;
+	/**
+	 * Drupal version (when cmsType is 'drupal').
+	 */
+	drupalVersion?: string;
 	intl: boolean;
 	networking: boolean;
 	extraLibraries: ExtraLibrary[];

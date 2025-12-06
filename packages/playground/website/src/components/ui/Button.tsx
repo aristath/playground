@@ -16,7 +16,13 @@ import css from './Button.module.css';
 
 export interface ButtonProps {
 	/** Button variant */
-	variant?: 'primary' | 'secondary' | 'default' | 'browser-chrome' | 'link';
+	variant?:
+		| 'primary'
+		| 'secondary'
+		| 'tertiary'
+		| 'default'
+		| 'browser-chrome'
+		| 'link';
 	/** Button size */
 	size?: 'small' | 'medium' | 'large';
 	/** Whether the button is in a loading/busy state */
@@ -47,6 +53,12 @@ export interface ButtonProps {
 	text?: string;
 	/** isSmall prop (WordPress compatibility) */
 	isSmall?: boolean;
+	/** Show tooltip for icon buttons (WordPress compatibility) */
+	showTooltip?: boolean;
+	/** Label prop (WordPress compatibility) - used as aria-label and tooltip */
+	label?: string;
+	/** Title attribute for native tooltip */
+	title?: string;
 }
 
 export function Button({
@@ -61,6 +73,8 @@ export function Button({
 	type = 'button',
 	text,
 	isSmall,
+	showTooltip,
+	label,
 	...rest
 }: ButtonProps) {
 	// Handle WordPress isSmall prop
@@ -71,6 +85,7 @@ export function Button({
 		{
 			[css.isPrimary]: variant === 'primary',
 			[css.isSecondary]: variant === 'secondary',
+			[css.isTertiary]: variant === 'tertiary',
 			[css.isBrowserChrome]: variant === 'browser-chrome',
 			[css.isLink]: variant === 'link',
 			[css.isSmall]: effectiveSize === 'small',
@@ -80,16 +95,24 @@ export function Button({
 		className
 	);
 
-	// Map variant to evergreen appearance
-	const getAppearance = ():
-		| 'default'
-		| 'minimal'
-		| 'primary'
-		| 'destructive' => {
+	// Map variant to evergreen appearance for regular buttons
+	const getAppearance = (): 'default' | 'minimal' | 'primary' => {
 		switch (variant) {
 			case 'primary':
 				return 'primary';
 			case 'link':
+			case 'tertiary':
+				return 'minimal';
+			default:
+				return 'default';
+		}
+	};
+
+	// Map variant to evergreen IconButton appearance (subset of regular button appearances)
+	const getIconButtonAppearance = (): 'default' | 'minimal' => {
+		switch (variant) {
+			case 'link':
+			case 'tertiary':
 				return 'minimal';
 			default:
 				return 'default';
@@ -113,15 +136,17 @@ export function Button({
 
 	// If only icon and no content, render as IconButton
 	if (icon && !content) {
+		const ariaLabel = rest['aria-label'] || label;
 		return (
 			<EvergreenIconButton
 				icon={icon as any}
-				appearance={getAppearance()}
+				appearance={getIconButtonAppearance()}
 				intent={isDestructive ? 'danger' : 'none'}
 				height={getHeight()}
 				disabled={disabled || isBusy}
 				className={buttonClass}
 				type={type}
+				aria-label={ariaLabel}
 				{...rest}
 			/>
 		);

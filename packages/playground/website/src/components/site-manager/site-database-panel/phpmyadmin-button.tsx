@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Icon, Flex, FlexItem } from '@wordpress/components';
-import { external } from '@wordpress/icons';
+import { Button, Icon, Flex, FlexItem, external } from '../../ui';
 import css from './style.module.css';
 import {
 	type PlaygroundClient,

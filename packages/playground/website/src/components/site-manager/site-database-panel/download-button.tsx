@@ -1,5 +1,4 @@
-import { Button, Icon, Flex, FlexItem } from '@wordpress/components';
-import { download } from '@wordpress/icons';
+import { Button, Icon, Flex, FlexItem, download } from '../../ui';
 import type { PlaygroundClient } from '@wp-playground/client';
 
 const DATABASE_PATH = '/wordpress/wp-content/database/.ht.sqlite';

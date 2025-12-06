@@ -13,7 +13,7 @@ export interface CheckboxProps {
 	/** Label for the checkbox */
 	label?: string;
 	/** Whether the checkbox is checked */
-	checked: boolean;
+	checked?: boolean;
 	/** Change handler */
 	onChange: (checked: boolean) => void;
 	/** Help text displayed below the checkbox */
@@ -24,16 +24,22 @@ export interface CheckboxProps {
 	className?: string;
 	/** Checkbox name attribute */
 	name?: string;
+	/** Value attribute (WordPress compatibility) */
+	value?: string;
+	/** onBlur handler (WordPress compatibility) */
+	onBlur?: () => void;
 }
 
 export function Checkbox({
 	label,
-	checked,
+	checked = false,
 	onChange,
 	help,
 	disabled = false,
 	className,
 	name,
+	value,
+	onBlur,
 }: CheckboxProps) {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		onChange(e.target.checked);

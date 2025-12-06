@@ -7,7 +7,7 @@ import {
 	type MutableRefObject,
 } from 'react';
 import classNames from 'classnames';
-import { Button, Notice } from '@wordpress/components';
+import { Button, Notice } from '../../ui';
 import type { SiteInfo } from '../../../lib/state/redux/slice-sites';
 import { usePlaygroundClient } from '../../../lib/use-playground-client';
 import type { AsyncWritableFilesystem } from '@wp-playground/storage';

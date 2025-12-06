@@ -241,7 +241,7 @@ export function Sidebar({
 				{storedSites.length > 0 && (
 					<>
 						<Heading
-							level="2"
+							size={400}
 							className={classNames(
 								css.sidebarLabel,
 								css.sidebarListLabel
@@ -323,7 +323,7 @@ export function Sidebar({
 			<footer
 				className={classNames(css.sidebarSection, css.sidebarFooter)}
 			>
-				<Heading level="2" className={css.sidebarLabel}>
+				<Heading size={400} className={css.sidebarLabel}>
 					Resources
 				</Heading>
 				<ItemGroup className={css.sidebarList}>

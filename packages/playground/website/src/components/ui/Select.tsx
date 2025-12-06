@@ -20,8 +20,11 @@ export interface SelectProps {
 	label?: string;
 	/** Selected value */
 	value: string;
-	/** Change handler */
-	onChange: (value: string) => void;
+	/** Change handler - can receive just value or value + extra info with event */
+	onChange: (
+		value: string,
+		extra?: { event?: React.ChangeEvent<HTMLSelectElement> }
+	) => void;
 	/** Options to display */
 	options: SelectOption[];
 	/** Help text displayed below the select */
@@ -34,6 +37,14 @@ export interface SelectProps {
 	name?: string;
 	/** Whether the field is required */
 	required?: boolean;
+	/** onBlur handler (WordPress compatibility) */
+	onBlur?: () => void;
+	/** Size variant (WordPress compatibility - ignored) */
+	size?: 'default' | 'compact' | 'small';
+	/** Label position (WordPress compatibility - ignored) */
+	labelPosition?: 'top' | 'side';
+	/** WordPress internal flag (ignored) */
+	__nextHasNoMarginBottom?: boolean;
 }
 
 export function Select({
@@ -46,9 +57,10 @@ export function Select({
 	className,
 	name,
 	required = false,
+	onBlur,
 }: SelectProps) {
 	const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-		onChange(e.target.value);
+		onChange(e.target.value, { event: e });
 	};
 
 	const select = (

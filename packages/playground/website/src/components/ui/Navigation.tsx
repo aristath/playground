@@ -125,6 +125,8 @@ export function Item({
 export interface SidebarHeadingProps {
 	/** Heading level (1-6) */
 	level?: 1 | 2 | 3 | 4 | 5 | 6;
+	/** Direct size for evergreen heading */
+	size?: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 	/** Children elements */
 	children: React.ReactNode;
 	/** Additional CSS class name */
@@ -137,6 +139,7 @@ export interface SidebarHeadingProps {
  */
 export function SidebarHeading({
 	level = 2,
+	size,
 	children,
 	className,
 }: SidebarHeadingProps) {
@@ -152,8 +155,10 @@ export function SidebarHeading({
 		5: 200,
 		6: 100,
 	};
+	// Use direct size if provided, otherwise map from level
+	const headingSize = size ?? sizeMap[level];
 	return (
-		<EvergreenHeading size={sizeMap[level]} className={className}>
+		<EvergreenHeading size={headingSize} className={className}>
 			{children}
 		</EvergreenHeading>
 	);

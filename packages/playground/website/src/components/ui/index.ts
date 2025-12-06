@@ -39,6 +39,12 @@ export type { NoticeProps } from './Notice';
 export { Spinner } from './Spinner';
 export type { SpinnerProps } from './Spinner';
 
+export { TabPanel } from './TabPanel';
+export type { TabPanelProps, TabPanelTab } from './TabPanel';
+
+export { ResizableBox } from './ResizableBox';
+export type { ResizableBoxProps } from './ResizableBox';
+
 export {
 	Flex,
 	FlexItem,
@@ -78,12 +84,12 @@ export {
 	Pane,
 	Heading,
 	Text,
+	Text as __experimentalText,
 	Paragraph,
 	Strong,
 	Code,
 	Pre,
 	Link,
-	Icon,
 	IconButton,
 	Tooltip,
 	Badge,
@@ -101,4 +107,22 @@ export {
 export { useMediaQuery } from './hooks';
 
 // Icons
-export { cog, CogIcon, close, page, details, Icon } from './icons';
+export {
+	cog,
+	CogIcon,
+	close,
+	page,
+	details,
+	folder,
+	layout,
+	chevronLeft,
+	edit,
+	moreVertical,
+	download,
+	external,
+	info,
+	undo,
+	cloud,
+	upload,
+	Icon,
+} from './icons';

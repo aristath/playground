@@ -1,16 +1,10 @@
 import React from 'react';
-import { Modal as EvergreenModal } from '../ui';
+import { Modal as EvergreenModal, ModalProps as BaseModalProps } from '../ui';
 import classNames from 'classnames';
 import css from './style.module.css';
 
-interface ModalProps {
-	title?: string;
-	isOpen?: boolean;
-	onRequestClose?: () => void;
-	children: React.ReactNode;
+interface ModalProps extends Omit<BaseModalProps, 'className'> {
 	className?: string;
-	small?: boolean;
-	isDismissable?: boolean;
 }
 
 export function Modal({

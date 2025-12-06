@@ -13,8 +13,7 @@ import classNames from 'classnames';
 import { forwardRef, useState } from 'react';
 import { setSiteManagerOpen } from '../../lib/state/redux/slice-ui';
 import { BlueprintsPanel } from './blueprints-panel';
-// ResizableBox temporarily kept from WordPress for complex resize behavior
-import { ResizableBox } from '@wordpress/components';
+import { ResizableBox } from '../ui';
 
 const SITE_INFO_MIN_WIDTH = 400;
 const SITE_INFO_DEFAULT_WIDTH = 555;

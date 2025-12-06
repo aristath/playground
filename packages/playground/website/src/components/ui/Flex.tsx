@@ -131,6 +131,8 @@ export interface StackProps {
 	className?: string;
 	/** Inline styles */
 	style?: React.CSSProperties;
+	/** Element type to render as (WordPress compatibility) */
+	as?: keyof JSX.IntrinsicElements;
 }
 
 /**
@@ -165,9 +167,11 @@ export function HStack({
 	children,
 	className,
 	style,
+	as,
 }: StackProps) {
 	return (
 		<Pane
+			is={as}
 			display="flex"
 			flexDirection="row"
 			alignItems={alignment}

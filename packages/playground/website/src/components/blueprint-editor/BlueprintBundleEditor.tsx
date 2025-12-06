@@ -7,8 +7,7 @@ import {
 	type Tooltip,
 } from '@codemirror/view';
 import { logger } from '@php-wasm/logger';
-import { Button, Icon, Notice } from '@wordpress/components';
-import { download } from '@wordpress/icons';
+import { Button, Icon, Notice, download } from '../ui';
 import {
 	resolveRuntimeConfiguration,
 	type BlueprintValidationResult,

@@ -16,6 +16,8 @@ export interface NoticeProps {
 	isDismissible?: boolean;
 	/** Callback when the notice is dismissed */
 	onRemove?: () => void;
+	/** Alternative callback for dismissal (WordPress compatibility) */
+	onDismiss?: () => void;
 	/** Actions to display in the notice */
 	actions?: Array<{
 		label: string;
@@ -26,16 +28,22 @@ export interface NoticeProps {
 	children: React.ReactNode;
 	/** Additional CSS class name */
 	className?: string;
+	/** Screen reader message (WordPress compatibility - not used visually) */
+	spokenMessage?: string;
 }
 
 export function Notice({
 	status = 'info',
 	isDismissible = true,
 	onRemove,
+	onDismiss,
 	actions,
 	children,
 	className,
+	spokenMessage,
 }: NoticeProps) {
+	// Use onDismiss if provided, otherwise fall back to onRemove
+	const handleRemove = onDismiss || onRemove;
 	// Map WordPress status to evergreen intent
 	const getIntent = () => {
 		switch (status) {
@@ -55,8 +63,9 @@ export function Notice({
 			intent={getIntent()}
 			hasIcon
 			isRemoveable={isDismissible}
-			onRemove={onRemove}
+			onRemove={handleRemove}
 			className={classNames(css.notice, className)}
+			aria-label={spokenMessage}
 		>
 			<Pane>{children}</Pane>
 			{actions && actions.length > 0 && (

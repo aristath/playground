@@ -1,11 +1,10 @@
 import type { SupportedPHPVersion } from '@php-wasm/universal';
 import { SupportedPHPVersionsList } from '@php-wasm/universal';
 import css from './style.module.css';
-import { CheckboxControl, SelectControl } from '@wordpress/components';
+import { CheckboxControl, SelectControl, VStack } from '../../ui';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import classNames from 'classnames';
-import { __experimentalVStack as VStack } from '@wordpress/components';
 import { useSupportedWordPressVersions } from './use-supported-wordpress-versions';
 import { RecommendedPHPVersion } from '@wp-playground/common';
 

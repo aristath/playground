@@ -1,4 +1,4 @@
-import { Notice, Flex, FlexItem, Button } from '@wordpress/components';
+import { Notice, Flex, FlexItem, Button } from '../../ui';
 import css from './style.module.css';
 import { SitePersistButton } from '../site-persist-button';
 import { useState } from 'react';

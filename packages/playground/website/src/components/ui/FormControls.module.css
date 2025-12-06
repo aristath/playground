@@ -1,0 +1,20 @@
+.formField {
+	margin-bottom: 16px;
+}
+
+.formField:last-child {
+	margin-bottom: 0;
+}
+
+.formField label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 500;
+	font-size: 13px;
+}
+
+.formField input,
+.formField select,
+.formField textarea {
+	width: 100%;
+}

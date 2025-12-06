@@ -1,13 +1,26 @@
 import React from 'react';
-import { Modal as WordPressModal } from '@wordpress/components';
-import type { ModalProps as WordPressModalProps } from '@wordpress/components/build-types/modal/types';
+import { Modal as EvergreenModal } from '../ui';
 import classNames from 'classnames';
 import css from './style.module.css';
 
-interface ModalProps extends WordPressModalProps {
+interface ModalProps {
+	title?: string;
+	isOpen?: boolean;
+	onRequestClose?: () => void;
+	children: React.ReactNode;
+	className?: string;
 	small?: boolean;
+	isDismissable?: boolean;
 }
-export function Modal({ small, className, children, ...rest }: ModalProps) {
+
+export function Modal({
+	small,
+	className,
+	children,
+	title,
+	onRequestClose,
+	...rest
+}: ModalProps) {
 	const modalClass = classNames(
 		css.modal,
 		{
@@ -17,8 +30,14 @@ export function Modal({ small, className, children, ...rest }: ModalProps) {
 	);
 
 	return (
-		<WordPressModal className={modalClass} {...rest}>
+		<EvergreenModal
+			title={title}
+			onRequestClose={onRequestClose}
+			className={modalClass}
+			small={small}
+			{...rest}
+		>
 			{children}
-		</WordPressModal>
+		</EvergreenModal>
 	);
 }

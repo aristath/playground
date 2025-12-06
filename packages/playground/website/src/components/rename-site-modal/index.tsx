@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { TextControl } from '@wordpress/components';
+import { TextControl } from '../ui';
 import { useAppDispatch, useAppSelector } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { updateSiteMetadata } from '../../lib/state/redux/slice-sites';

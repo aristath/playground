@@ -1,5 +1,5 @@
 import { Sidebar } from './sidebar';
-import { useMediaQuery } from '@wordpress/compose';
+import { useMediaQuery } from '../ui';
 import {
 	useAppDispatch,
 	useActiveSite,
@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import { forwardRef, useState } from 'react';
 import { setSiteManagerOpen } from '../../lib/state/redux/slice-ui';
 import { BlueprintsPanel } from './blueprints-panel';
+// ResizableBox temporarily kept from WordPress for complex resize behavior
 import { ResizableBox } from '@wordpress/components';
 
 const SITE_INFO_MIN_WIDTH = 400;

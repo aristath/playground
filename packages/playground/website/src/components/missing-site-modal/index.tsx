@@ -1,4 +1,4 @@
-import { Button, Flex, FlexItem } from '@wordpress/components';
+import { Button, Flex, FlexItem } from '../ui';
 import { Modal } from '../modal';
 import { SitePersistButton } from '../site-manager/site-persist-button';
 import {

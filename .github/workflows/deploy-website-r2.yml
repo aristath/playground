@@ -1,0 +1,118 @@
+name: Deploy Playground Website to Cloudflare R2
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: 'Deployment environment'
+                required: true
+                default: 'staging'
+                type: choice
+                options:
+                    - staging
+                    - production
+
+concurrency:
+    group: website-deployment-r2-${{ github.event.inputs.environment || 'staging' }}
+
+env:
+    NODE_VERSION: '20'
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        outputs:
+            build-version: ${{ steps.build-info.outputs.version }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: true
+                  ref: ${{ vars.GIT_REF_TO_DEPLOY || github.ref }}
+
+            - uses: ./.github/actions/prepare-playground
+
+            - name: Build Playground Website
+              run: npx nx build playground-website
+              env:
+                  CORS_PROXY_URL: ${{ vars.CORS_PROXY_URL }}
+
+            - name: Get build info
+              id: build-info
+              run: |
+                  echo "version=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+            - name: Create deployment artifact
+              run: |
+                  cd dist/packages/playground/wasm-wordpress-net
+                  tar -czf ${{ github.workspace }}/playground-build.tar.gz .
+
+            - name: Upload build artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playground-build-${{ steps.build-info.outputs.version }}
+                  path: playground-build.tar.gz
+                  retention-days: 7
+
+    deploy-to-r2:
+        needs: build
+        runs-on: ubuntu-latest
+        environment:
+            name: ${{ github.event.inputs.environment || 'staging' }}
+        steps:
+            - name: Download build artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: playground-build-${{ needs.build.outputs.build-version }}
+
+            - name: Extract build
+              run: |
+                  mkdir -p dist
+                  tar -xzf playground-build.tar.gz -C dist
+
+            - name: Setup rclone
+              run: |
+                  curl -O https://downloads.rclone.org/rclone-current-linux-amd64.deb
+                  sudo dpkg -i rclone-current-linux-amd64.deb
+
+            - name: Configure rclone for Cloudflare R2
+              run: |
+                  mkdir -p ~/.config/rclone
+                  cat > ~/.config/rclone/rclone.conf << EOF
+                  [r2]
+                  type = s3
+                  provider = Cloudflare
+                  access_key_id = ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+                  secret_access_key = ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+                  endpoint = https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+                  acl = private
+                  EOF
+
+            - name: Deploy to R2
+              env:
+                  BUCKET_NAME: ${{ vars.R2_BUCKET_NAME }}
+              run: |
+                  # Sync all files to R2
+                  # --checksum ensures only changed files are uploaded
+                  rclone sync dist/ r2:${BUCKET_NAME}/ \
+                    --checksum \
+                    --transfers 32 \
+                    --checkers 16 \
+                    --s3-upload-concurrency 8 \
+                    --progress \
+                    --stats 30s
+
+            - name: Purge Cloudflare Cache
+              if: success()
+              run: |
+                  curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+                    -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+                    -H "Content-Type: application/json" \
+                    --data '{"purge_everything":true}'
+
+            - name: Deployment Summary
+              run: |
+                  echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Environment**: ${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Build Version**: ${{ needs.build.outputs.build-version }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Bucket**: ${{ vars.R2_BUCKET_NAME }}" >> $GITHUB_STEP_SUMMARY

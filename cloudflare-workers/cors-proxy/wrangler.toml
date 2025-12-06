@@ -1,0 +1,42 @@
+name = "playground-cors-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Development settings
+[dev]
+port = 5263
+local_protocol = "http"
+
+# Default allowed origins (can be overridden per environment)
+[vars]
+ALLOWED_ORIGINS = '["http://localhost:5400","http://127.0.0.1:5400","http://localhost:4400","http://127.0.0.1:4400","http://localhost","http://127.0.0.1"]'
+
+# Staging environment
+[env.staging]
+name = "playground-cors-proxy-staging"
+
+[env.staging.vars]
+ALLOWED_ORIGINS = '["https://staging.playground.wordpress.net","http://localhost:5400","http://127.0.0.1:5400"]'
+
+# Production environment
+[env.production]
+name = "playground-cors-proxy-production"
+
+[env.production.vars]
+ALLOWED_ORIGINS = '["https://playground.wordpress.net"]'
+
+# Note: To use custom domains, add routes after deployment:
+# [env.production.routes]
+# routes = [
+#   { pattern = "wordpress-playground-cors-proxy.net/*", zone_name = "wordpress-playground-cors-proxy.net" }
+# ]
+
+# Altolith environment (aristath's personal deployment)
+[env.altolith]
+name = "altolith-cors-proxy"
+routes = [
+  { pattern = "cors-proxy.altolith.dev", custom_domain = true }
+]
+
+[env.altolith.vars]
+ALLOWED_ORIGINS = '["https://altolith.dev","http://localhost:5400","http://127.0.0.1:5400"]'

@@ -1,0 +1,26 @@
+name = "playground-logger"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Development settings
+[dev]
+port = 5266
+local_protocol = "http"
+
+# Staging environment
+[env.staging]
+name = "playground-logger-staging"
+
+# Production environment
+[env.production]
+name = "playground-logger-production"
+
+# Optional: KV namespace for rate limiting
+# Uncomment and create KV namespace if needed
+# [[env.production.kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "<your-kv-namespace-id>"
+
+# Note: Secrets must be set using:
+# wrangler secret put SLACK_CHANNEL --env production
+# wrangler secret put SLACK_TOKEN --env production

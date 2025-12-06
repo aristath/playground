@@ -1,0 +1,20 @@
+name = "playground-oauth"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Development settings
+[dev]
+port = 5265
+local_protocol = "http"
+
+# Staging environment
+[env.staging]
+name = "playground-oauth-staging"
+
+# Production environment
+[env.production]
+name = "playground-oauth-production"
+
+# Note: Secrets must be set using:
+# wrangler secret put CLIENT_ID --env production
+# wrangler secret put CLIENT_SECRET --env production

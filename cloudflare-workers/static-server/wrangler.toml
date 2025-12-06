@@ -1,0 +1,41 @@
+name = "playground-static"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "PLAYGROUND_BUCKET"
+bucket_name = "playground-static"
+
+# Staging environment
+[env.staging]
+name = "playground-static-staging"
+
+[[env.staging.r2_buckets]]
+binding = "PLAYGROUND_BUCKET"
+bucket_name = "playground-static-staging"
+
+# Production environment
+[env.production]
+name = "playground-static-production"
+
+[[env.production.r2_buckets]]
+binding = "PLAYGROUND_BUCKET"
+bucket_name = "playground-static-production"
+
+# Note: To use custom domains, add routes after deployment:
+# [env.production.routes]
+# routes = [
+#   { pattern = "playground.wordpress.net", custom_domain = true }
+# ]
+
+# Altolith environment (aristath's personal deployment)
+[env.altolith]
+name = "altolith"
+routes = [
+  { pattern = "altolith.dev", custom_domain = true }
+]
+
+[[env.altolith.r2_buckets]]
+binding = "PLAYGROUND_BUCKET"
+bucket_name = "altolith-dev"

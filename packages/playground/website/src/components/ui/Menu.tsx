@@ -62,13 +62,24 @@ export function MenuItem({
 }
 
 export interface DropdownMenuProps {
-	/** The element that triggers the dropdown */
-	renderToggle: (props: {
+	/** The element that triggers the dropdown (alternative to icon/label) */
+	renderToggle?: (props: {
 		isOpen: boolean;
 		onToggle: () => void;
 	}) => React.ReactNode;
+	/** Icon for the toggle button (WordPress compatibility) */
+	icon?: React.ReactNode;
+	/** Label for the toggle button (WordPress compatibility) */
+	label?: string;
+	/** Toggle button props (WordPress compatibility) */
+	toggleProps?: {
+		className?: string;
+		style?: React.CSSProperties;
+	};
 	/** The content of the dropdown menu (WordPress compatibility) */
-	children?: React.ReactNode;
+	children?:
+		| React.ReactNode
+		| ((props: { onClose: () => void }) => React.ReactNode);
 	/** Render content function (WordPress compatibility) */
 	renderContent?: (props: { onClose: () => void }) => React.ReactNode;
 	/** Position of the dropdown */
@@ -91,6 +102,9 @@ export interface DropdownMenuProps {
 
 export function DropdownMenu({
 	renderToggle,
+	icon,
+	label,
+	toggleProps,
 	children,
 	renderContent,
 	position = 'bottom-left',
@@ -133,13 +147,41 @@ export function DropdownMenu({
 
 	const onClose = () => setIsOpen(false);
 
-	// Determine content - either renderContent or children
-	const content = renderContent ? (
-		<Pane padding={0}>{renderContent({ onClose })}</Pane>
+	// Determine content - either renderContent, children as function, or children as elements
+	let menuContent: React.ReactNode;
+	if (renderContent) {
+		menuContent = <Pane padding={0}>{renderContent({ onClose })}</Pane>;
+	} else if (typeof children === 'function') {
+		menuContent = (
+			<EvergreenMenu>
+				<EvergreenMenu.Group>
+					{children({ onClose })}
+				</EvergreenMenu.Group>
+			</EvergreenMenu>
+		);
+	} else {
+		menuContent = (
+			<EvergreenMenu>
+				<EvergreenMenu.Group>{children}</EvergreenMenu.Group>
+			</EvergreenMenu>
+		);
+	}
+
+	// Create the toggle element
+	const toggleElement = renderToggle ? (
+		(renderToggle({
+			isOpen,
+			onToggle: () => setIsOpen(!isOpen),
+		}) as React.ReactElement)
 	) : (
-		<EvergreenMenu>
-			<EvergreenMenu.Group>{children}</EvergreenMenu.Group>
-		</EvergreenMenu>
+		<Button
+			className={toggleProps?.className}
+			style={toggleProps?.style}
+			onClick={() => setIsOpen(!isOpen)}
+		>
+			{icon}
+			{label && !icon && label}
+		</Button>
 	);
 
 	return (
@@ -148,14 +190,9 @@ export function DropdownMenu({
 			isShown={isOpen}
 			onOpen={() => setIsOpen(true)}
 			onClose={onClose}
-			content={content}
+			content={menuContent}
 		>
-			{
-				renderToggle({
-					isOpen,
-					onToggle: () => setIsOpen(!isOpen),
-				}) as React.ReactElement
-			}
+			{toggleElement}
 		</Popover>
 	);
 }

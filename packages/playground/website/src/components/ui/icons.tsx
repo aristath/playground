@@ -32,3 +32,60 @@ export const cog = (
 		<path d="M12 8c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-1-11c-.6 0-1 .4-1 1v.3c0 .4-.2.8-.5 1-.3.2-.7.3-1.1.1l-.3-.1c-.5-.3-1.1-.1-1.4.4l-1 1.7c-.3.5-.1 1.1.4 1.4l.3.1c.3.2.5.6.5 1v.2c0 .4-.2.8-.5 1l-.3.1c-.5.3-.7.9-.4 1.4l1 1.7c.3.5.9.7 1.4.4l.3-.1c.3-.2.8-.1 1.1.1.3.2.5.6.5 1V19c0 .6.4 1 1 1h2c.6 0 1-.4 1-1v-.3c0-.4.2-.8.5-1 .3-.2.7-.3 1.1-.1l.3.1c.5.3 1.1.1 1.4-.4l1-1.7c.3-.5.1-1.1-.4-1.4l-.3-.1c-.3-.2-.5-.6-.5-1v-.2c0-.4.2-.8.5-1l.3-.1c.5-.3.7-.9.4-1.4l-1-1.7c-.3-.5-.9-.7-1.4-.4l-.3.1c-.3.2-.8.1-1.1-.1-.3-.2-.5-.6-.5-1V4c0-.6-.4-1-1-1h-2z" />
 	</svg>
 );
+
+// WordPress close icon
+export const close = (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="currentColor"
+	>
+		<path d="M12 13.06l3.712 3.712 1.061-1.06L13.061 12l3.712-3.712-1.06-1.06L12 10.938 8.288 7.227l-1.061 1.06L10.939 12l-3.712 3.712 1.06 1.061L12 13.061z" />
+	</svg>
+);
+
+// WordPress page icon
+export const page = (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="currentColor"
+	>
+		<path d="M7 5.5h10v13H7z" />
+	</svg>
+);
+
+/**
+ * Icon wrapper component for WordPress icon compatibility
+ * Renders an icon element (React element or component) with consistent styling
+ */
+export function Icon({
+	icon,
+	size = 24,
+	className,
+}: {
+	icon: React.ReactNode;
+	size?: number;
+	className?: string;
+}) {
+	if (!icon) return null;
+
+	// If icon is a React element, clone it with size props
+	if (React.isValidElement(icon)) {
+		return React.cloneElement(icon as React.ReactElement<any>, {
+			width: size,
+			height: size,
+			className,
+		});
+	}
+
+	// Otherwise wrap it
+	return (
+		<span
+			className={className}
+			style={{ width: size, height: size, display: 'inline-flex' }}
+		>
+			{icon}
+		</span>
+	);
+}

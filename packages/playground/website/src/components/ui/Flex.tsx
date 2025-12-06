@@ -92,9 +92,39 @@ export function FlexItem({
 	);
 }
 
+/**
+ * FlexBlock - A flex item that grows to fill available space
+ * (WordPress compatibility)
+ */
+export function FlexBlock({
+	children,
+	className,
+	style,
+}: {
+	children: React.ReactNode;
+	className?: string;
+	style?: React.CSSProperties;
+}) {
+	return (
+		<Pane flexGrow={1} flexShrink={1} className={className} style={style}>
+			{children}
+		</Pane>
+	);
+}
+
 export interface StackProps {
 	/** Gap between items */
 	spacing?: number | string;
+	/** Justify content on the main axis */
+	justify?:
+		| 'flex-start'
+		| 'flex-end'
+		| 'center'
+		| 'space-between'
+		| 'space-around'
+		| 'space-evenly';
+	/** Alignment on the cross axis (HStack) */
+	alignment?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline';
 	/** Children elements */
 	children: React.ReactNode;
 	/** Additional CSS class name */
@@ -130,6 +160,8 @@ export function VStack({
  */
 export function HStack({
 	spacing = 8,
+	justify = 'flex-start',
+	alignment = 'center',
 	children,
 	className,
 	style,
@@ -138,7 +170,8 @@ export function HStack({
 		<Pane
 			display="flex"
 			flexDirection="row"
-			alignItems="center"
+			alignItems={alignment}
+			justifyContent={justify}
 			gap={spacing}
 			className={className}
 			style={style}

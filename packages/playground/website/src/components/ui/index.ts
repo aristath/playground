@@ -42,6 +42,7 @@ export type { SpinnerProps } from './Spinner';
 export {
 	Flex,
 	FlexItem,
+	FlexBlock,
 	VStack,
 	HStack,
 	__experimentalVStack,
@@ -51,6 +52,26 @@ export type { FlexProps, FlexItemProps, StackProps } from './Flex';
 
 export { MenuItem, DropdownMenu, Dropdown } from './Menu';
 export type { MenuItemProps, DropdownMenuProps } from './Menu';
+
+export {
+	NavigableMenu,
+	MenuGroup,
+	ItemGroup,
+	Item,
+	SidebarHeading,
+	SidebarMenuItem,
+	__experimentalItemGroup,
+	__experimentalItem,
+	__experimentalHeading,
+} from './Navigation';
+export type {
+	NavigableMenuProps,
+	MenuGroupProps,
+	ItemGroupProps,
+	ItemProps,
+	SidebarHeadingProps,
+	SidebarMenuItemProps,
+} from './Navigation';
 
 // Re-export commonly used evergreen-ui components that don't need wrapping
 export {
@@ -80,4 +101,4 @@ export {
 export { useMediaQuery } from './hooks';
 
 // Icons
-export { cog, CogIcon } from './icons';
+export { cog, CogIcon, close, page, Icon } from './icons';

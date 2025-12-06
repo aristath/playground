@@ -1,20 +1,21 @@
 import css from './style.module.css';
 import classNames from 'classnames';
 import {
-	__experimentalHeading as Heading,
+	SidebarHeading as Heading,
 	NavigableMenu,
 	MenuGroup,
-	MenuItem,
-	__experimentalHStack as HStack,
+	SidebarMenuItem as MenuItem,
+	HStack,
 	FlexBlock,
 	Icon,
-	__experimentalItemGroup as ItemGroup,
-	__experimentalItem as Item,
+	ItemGroup,
+	Item,
 	Flex,
 	DropdownMenu,
 	Button,
-} from '@wordpress/components';
-import { page, close } from '@wordpress/icons';
+	page,
+	close,
+} from '../../ui';
 import { ClockIcon, WordPressIcon } from '@wp-playground/components';
 import {
 	setActiveSite,
@@ -190,7 +191,7 @@ export function Sidebar({
 						{...(activeSite?.metadata.storage === 'none'
 							? {
 									'aria-current': 'page',
-							  }
+								}
 							: {})}
 					>
 						<HStack justify="flex-start" alignment="center">
@@ -269,7 +270,7 @@ export function Sidebar({
 										{...(isSelected
 											? {
 													'aria-current': 'page',
-											  }
+												}
 											: {})}
 									>
 										<HStack

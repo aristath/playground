@@ -1,4 +1,4 @@
-import { Icon, Spinner } from '@wordpress/components';
+import { Icon, Spinner } from '../../components/ui';
 import { oAuthState } from '../state';
 import { GitHubIcon } from '../github';
 import css from './style.module.css';

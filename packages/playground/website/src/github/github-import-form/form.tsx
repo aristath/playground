@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { Notice, Button as WPButton } from '@wordpress/components';
+import { Notice, Button as WPButton } from '../../components/ui';
 import type { PlaygroundClient } from '@wp-playground/client';
 
 import css from './style.module.css';

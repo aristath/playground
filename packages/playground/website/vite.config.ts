@@ -47,7 +47,7 @@ export default defineConfig(({ command, mode }) => {
 		'CORS_PROXY_URL' in process.env
 			? process.env.CORS_PROXY_URL
 			: mode === 'production'
-				? 'https://wordpress-playground-cors-proxy.net/?'
+				? 'https://cors-proxy.altolith.dev/?'
 				: 'http://127.0.0.1:5263/cors-proxy.php?';
 
 	return {

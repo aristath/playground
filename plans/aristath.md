@@ -154,7 +154,7 @@ Update virtual module URL in:
 - `packages/playground/website/vite.config.ts`
 - `packages/playground/remote/vite.config.ts`
 
-Production URL stays: `https://wordpress-playground-cors-proxy.net/?`
+Production URL stays: `https://cors-proxy.altolith.dev/?`
 Dev URL changes to: `http://127.0.0.1:5263/?` (Wrangler dev server)
 
 No changes needed to `fetch-with-cors-proxy.ts` - URL format unchanged.

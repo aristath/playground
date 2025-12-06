@@ -141,7 +141,7 @@ npm run deploy:production
 
 4. Configure GitHub variables per environment:
     - `R2_BUCKET_NAME` (e.g., `playground-static-production`)
-    - `CORS_PROXY_URL` (e.g., `https://wordpress-playground-cors-proxy.net/?`)
+    - `CORS_PROXY_URL` (e.g., `https://cors-proxy.altolith.dev/?`)
 
 ## Architecture
 

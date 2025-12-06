@@ -28,7 +28,7 @@ ALLOWED_ORIGINS = '["https://playground.wordpress.net"]'
 # Note: To use custom domains, add routes after deployment:
 # [env.production.routes]
 # routes = [
-#   { pattern = "wordpress-playground-cors-proxy.net/*", zone_name = "wordpress-playground-cors-proxy.net" }
+#   { pattern = "cors-proxy.altolith.dev/*", zone_name = "cors-proxy.altolith.dev" }
 # ]
 
 # Altolith environment (aristath's personal deployment)

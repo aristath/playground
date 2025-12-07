@@ -322,9 +322,6 @@ async function installDrupal(
 	const response = await withPHPIniValues(
 		php,
 		{
-			// Disable functions that could cause issues during install
-			disable_functions: 'fsockopen',
-			allow_url_fopen: '0',
 			// Increase limits for installation
 			max_execution_time: '300',
 			memory_limit: '256M',

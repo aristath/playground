@@ -129,6 +129,19 @@ ini_set('session.cookie_lifetime', 2000000);
  */
 ini_set('memory_limit', '256M');
 
+/**
+ * Custom HTTP client configuration for Playground.
+ *
+ * This configures Guzzle to use a custom handler that routes all HTTP
+ * requests through JavaScript, enabling CORS proxy support.
+ */
+if (file_exists('/internal/shared/drupal-includes/drupal_http_fetch.php')) {
+  require_once '/internal/shared/drupal-includes/drupal_http_fetch.php';
+  $settings['http_client_config'] = [
+    'handler' => playground_create_guzzle_handler(),
+  ];
+}
+
 `;
 }
 

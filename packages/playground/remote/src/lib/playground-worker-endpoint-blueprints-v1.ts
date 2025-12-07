@@ -21,6 +21,9 @@ import type { PHP } from '@php-wasm/universal';
 /* @ts-ignore */
 import { corsProxyUrl as defaultCorsProxyUrl } from 'virtual:cors-proxy-url';
 import type { WorkerBootOptions } from './playground-worker-endpoint';
+import { DrupalFetchNetworkTransport } from './drupal-fetch-network-transport';
+/* @ts-ignore */
+import drupalHttpFetch from './playground-mu-plugin/drupal_http_fetch.php?raw';
 
 // post message to parent
 self.postMessage('worker-script-started');
@@ -36,6 +39,7 @@ class ArtifactExpiredError extends Error {
 
 class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 	private currentCmsType: 'wordpress' | 'drupal' = 'wordpress';
+	private drupalNetworkTransport: DrupalFetchNetworkTransport | undefined;
 
 	override async boot({
 		scope,
@@ -86,6 +90,8 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 					mounts,
 					endpoint,
 					shouldInstall: shouldInstallWordPress,
+					corsProxyUrl,
+					withNetworking,
 				});
 			} else {
 				// Boot WordPress (default)
@@ -249,6 +255,8 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		mounts,
 		endpoint,
 		shouldInstall,
+		corsProxyUrl,
+		withNetworking,
 	}: {
 		requestHandler: any;
 		siteUrl: string;
@@ -256,6 +264,8 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		mounts: any[];
 		endpoint: PlaygroundWorkerEndpointBlueprintsV1;
 		shouldInstall: boolean;
+		corsProxyUrl?: string;
+		withNetworking?: boolean;
 	}) {
 		const drupalDetails = getDrupalModuleDetails(drupalVersion);
 		let drupalRequest: Promise<Response> | null = null;
@@ -266,6 +276,24 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 			});
 			drupalRequest = this.downloadMonitor.monitorFetch(
 				fetch(drupalDetails.url)
+			);
+		}
+
+		// Set up Drupal network transport BEFORE installation
+		// This is critical because Drupal's installer makes network requests
+		const primaryPhp = await requestHandler.getPrimaryPhp();
+		if (withNetworking) {
+			this.drupalNetworkTransport = new DrupalFetchNetworkTransport({
+				corsProxyUrl,
+			});
+			await this.drupalNetworkTransport.setupMessageHandler(primaryPhp);
+			await this.drupalNetworkTransport.setEnabled(primaryPhp, true);
+
+			// Write the Guzzle handler PHP file so settings.php can include it
+			primaryPhp.mkdir('/internal/shared/drupal-includes');
+			primaryPhp.writeFile(
+				'/internal/shared/drupal-includes/drupal_http_fetch.php',
+				drupalHttpFetch
 			);
 		}
 

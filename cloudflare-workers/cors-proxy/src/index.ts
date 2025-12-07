@@ -1,16 +1,16 @@
 /**
  * WordPress Playground CORS Proxy Worker
  *
- * A Cloudflare Worker that proxies requests to external URLs,
- * adding CORS headers for allowed origins.
+ * A truly transparent CORS proxy that:
+ * - Passes through ALL HTTP methods
+ * - Passes through ALL headers (except those that would break the proxy)
+ * - Passes through ALL response data unmodified
+ * - Only adds CORS headers to allow cross-origin access
  */
 
 export interface Env {
 	ALLOWED_ORIGINS?: string; // JSON array of allowed origins
 }
-
-const MAX_REQUEST_SIZE = 1 * 1024 * 1024; // 1MB
-const MAX_RESPONSE_SIZE = 100 * 1024 * 1024; // 100MB
 
 const DEFAULT_ALLOWED_ORIGINS = [
 	'https://playground.wordpress.net',
@@ -21,24 +21,6 @@ const DEFAULT_ALLOWED_ORIGINS = [
 	'http://127.0.0.1:4400',
 	'http://localhost:4400',
 ];
-
-// Headers that are never forwarded
-const STRICTLY_DISALLOWED_HEADERS = new Set(['cookie', 'host']);
-
-// Headers that require explicit opt-in via X-Cors-Proxy-Allowed-Request-Headers
-const HEADERS_REQUIRING_OPT_IN = new Set(['authorization']);
-
-// Headers filtered from the response
-const FILTERED_RESPONSE_HEADERS = new Set([
-	'set-cookie',
-	'authorization',
-	'www-authenticate',
-	'cache-control',
-	'access-control-allow-origin',
-	'access-control-allow-credentials',
-	'access-control-allow-methods',
-	'access-control-allow-headers',
-]);
 
 /**
  * Extract target URL from the proxy request
@@ -98,7 +80,6 @@ function validateUrl(
 	}
 
 	// Check for private IP patterns in the hostname
-	// Note: Cloudflare Workers have built-in SSRF protection, but we add URL-based checks
 	const host = parsed.hostname.toLowerCase();
 	if (isPrivateHostname(host)) {
 		return { url: parsed, error: 'Private IPs are forbidden' };
@@ -191,102 +172,36 @@ function shouldRespondWithCorsHeaders(origin: string, env: Env): boolean {
 }
 
 /**
- * Filter request headers before forwarding
+ * Forward request headers - pass through everything except 'host'
  */
-function filterRequestHeaders(headers: Headers): Headers {
-	const filtered = new Headers();
-
-	// Get opt-in headers
-	const optInHeadersStr =
-		headers.get('x-cors-proxy-allowed-request-headers') || '';
-	const optInHeaders = new Set(
-		optInHeadersStr
-			.split(',')
-			.map((h) => h.trim().toLowerCase())
-			.filter(Boolean)
-	);
-
+function forwardRequestHeaders(headers: Headers, targetHost: string): Headers {
+	const forwarded = new Headers();
 	headers.forEach((value, name) => {
 		const lowerName = name.toLowerCase();
-
-		// Skip strictly disallowed headers
-		if (STRICTLY_DISALLOWED_HEADERS.has(lowerName)) {
+		// Skip 'host' - we set it to the target
+		if (lowerName === 'host') {
 			return;
 		}
-
-		// Skip headers requiring opt-in unless opted in
-		if (
-			HEADERS_REQUIRING_OPT_IN.has(lowerName) &&
-			!optInHeaders.has(lowerName)
-		) {
-			return;
-		}
-
-		filtered.set(name, value);
+		forwarded.set(name, value);
 	});
-
-	return filtered;
+	forwarded.set('Host', targetHost);
+	return forwarded;
 }
 
 /**
- * Filter response headers before sending to client
+ * Forward response headers - pass through everything except CORS headers (we add our own)
  */
-function filterResponseHeaders(headers: Headers): Headers {
-	const filtered = new Headers();
-
+function forwardResponseHeaders(headers: Headers): Headers {
+	const forwarded = new Headers();
 	headers.forEach((value, name) => {
 		const lowerName = name.toLowerCase();
-
-		// Skip filtered response headers
-		if (FILTERED_RESPONSE_HEADERS.has(lowerName)) {
+		// Skip CORS headers - we add our own
+		if (lowerName.startsWith('access-control-')) {
 			return;
 		}
-
-		// Skip content-length (may change with streaming)
-		if (lowerName === 'content-length') {
-			return;
-		}
-
-		filtered.append(name, value);
+		forwarded.append(name, value);
 	});
-
-	return filtered;
-}
-
-/**
- * Rewrite redirect location to go through the proxy
- */
-function rewriteRedirectLocation(
-	requestUrl: string,
-	redirectLocation: string,
-	proxyBaseUrl: string
-): string {
-	const targetUrl = new URL(requestUrl);
-	let absoluteLocation: string;
-
-	try {
-		// Try parsing as absolute URL
-		new URL(redirectLocation);
-		absoluteLocation = redirectLocation;
-	} catch {
-		// It's a relative URL, make it absolute
-		if (redirectLocation.startsWith('/')) {
-			// Absolute path
-			absoluteLocation = `${targetUrl.protocol}//${targetUrl.host}${redirectLocation}`;
-		} else {
-			// Relative path
-			const basePath = targetUrl.pathname.substring(
-				0,
-				targetUrl.pathname.lastIndexOf('/')
-			);
-			absoluteLocation = `${targetUrl.protocol}//${targetUrl.host}${basePath}/${redirectLocation}`;
-		}
-	}
-
-	// Append to proxy URL
-	const separator =
-		proxyBaseUrl.endsWith('/') || proxyBaseUrl.endsWith('?') ? '' : '?';
-	return `${proxyBaseUrl}${separator}${absoluteLocation}`;
+	return forwarded;
 }
 
 /**
@@ -298,15 +213,10 @@ function handlePreflight(origin: string, env: Env): Response {
 	if (shouldRespondWithCorsHeaders(origin, env)) {
 		headers.set('Access-Control-Allow-Origin', origin);
 		headers.set('Access-Control-Allow-Credentials', 'true');
-		headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-		headers.set(
-			'Access-Control-Allow-Headers',
-			'Accept, Authorization, Content-Type, git-protocol, wp_blog, wp_install, x-cors-proxy-allowed-request-headers'
-		);
+		headers.set('Access-Control-Allow-Methods', '*');
+		headers.set('Access-Control-Allow-Headers', '*');
 		headers.set('Access-Control-Max-Age', '86400');
 	}
-
-	headers.set('Allow', 'GET, POST, OPTIONS');
 
 	return new Response(null, { status: 204, headers });
 }
@@ -326,21 +236,6 @@ export default {
 			return handlePreflight(origin, env);
 		}
 
-		// Only allow GET and POST
-		if (request.method !== 'GET' && request.method !== 'POST') {
-			return new Response('Method Not Allowed', { status: 405 });
-		}
-
-		// Check request size for POST
-		const contentLength = request.headers.get('Content-Length');
-		if (request.method === 'POST' && contentLength) {
-			if (parseInt(contentLength, 10) >= MAX_REQUEST_SIZE) {
-				return new Response('Request Entity Too Large', {
-					status: 413,
-				});
-			}
-		}
-
 		// Extract target URL from query string or path
 		const targetUrl = getTargetUrl(url);
 		if (!targetUrl) {
@@ -355,16 +250,21 @@ export default {
 			return new Response(`Bad Request\n\n${error}`, { status: 400 });
 		}
 
-		// Build proxied request headers
-		const proxyHeaders = filterRequestHeaders(request.headers);
-		proxyHeaders.set('Host', parsedTarget.host);
+		// Forward request headers
+		const proxyHeaders = forwardRequestHeaders(
+			request.headers,
+			parsedTarget.host
+		);
 
-		// Create the proxied request
+		// Create the proxied request - pass through method and body
 		const proxyRequest = new Request(targetUrl, {
 			method: request.method,
 			headers: proxyHeaders,
-			body: request.method !== 'GET' ? request.body : undefined,
-			redirect: 'manual', // Handle redirects ourselves
+			body:
+				request.method !== 'GET' && request.method !== 'HEAD'
+					? request.body
+					: undefined,
+			redirect: 'manual', // Let client handle redirects
 		});
 
 		let response: Response;
@@ -377,47 +277,15 @@ export default {
 			);
 		}
 
-		// Check response size
-		const responseContentLength = response.headers.get('Content-Length');
-		if (
-			responseContentLength &&
-			parseInt(responseContentLength, 10) >= MAX_RESPONSE_SIZE
-		) {
-			return new Response('Response Too Large', { status: 413 });
-		}
-
-		// Build response headers
-		const responseHeaders = filterResponseHeaders(response.headers);
+		// Forward response headers
+		const responseHeaders = forwardResponseHeaders(response.headers);
 
 		// Add CORS headers if origin is whitelisted
 		if (shouldRespondWithCorsHeaders(origin, env)) {
 			responseHeaders.set('Access-Control-Allow-Origin', origin);
 			responseHeaders.set('Access-Control-Allow-Credentials', 'true');
-			responseHeaders.set(
-				'Access-Control-Allow-Methods',
-				'GET, POST, OPTIONS'
-			);
-			responseHeaders.set(
-				'Access-Control-Allow-Headers',
-				'Accept, Authorization, Content-Type, git-protocol, wp_blog, wp_install, x-cors-proxy-allowed-request-headers'
-			);
-		}
-
-		// Disable caching
-		responseHeaders.set('Cache-Control', 'no-cache');
-
-		// Handle redirects - rewrite Location header
-		if (response.status >= 300 && response.status < 400) {
-			const location = response.headers.get('Location');
-			if (location) {
-				const proxyBaseUrl = `${url.protocol}//${url.host}${url.pathname}`;
-				const newLocation = rewriteRedirectLocation(
-					targetUrl,
-					location,
-					proxyBaseUrl
-				);
-				responseHeaders.set('Location', newLocation);
-			}
+			responseHeaders.set('Access-Control-Allow-Methods', '*');
+			responseHeaders.set('Access-Control-Allow-Headers', '*');
 		}
 
 		return new Response(response.body, {

@@ -410,6 +410,29 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		});
 	}
 
+	protected override async finalizeAfterBoot(
+		requestHandler: any,
+		withNetworking: boolean,
+		knownRemoteAssetPaths: Set<string>
+	) {
+		// For Drupal, skip WordPress-specific logic (version detection, remote assets)
+		if (this.currentCmsType === 'drupal') {
+			console.log(
+				'🚀 [WORKER:finalizeAfterBoot] Drupal mode - skipping WordPress-specific logic'
+			);
+			// Just set the request handler, skip WordPress version detection
+			this.__internal_setRequestHandler(requestHandler);
+			return;
+		}
+
+		// For WordPress, use the parent implementation
+		return super.finalizeAfterBoot(
+			requestHandler,
+			withNetworking,
+			knownRemoteAssetPaths
+		);
+	}
+
 	override async getCMSModuleDetails() {
 		if (this.currentCmsType === 'drupal') {
 			return {

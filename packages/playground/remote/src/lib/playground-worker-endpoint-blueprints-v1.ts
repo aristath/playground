@@ -24,6 +24,8 @@ import type { WorkerBootOptions } from './playground-worker-endpoint';
 import { DrupalFetchNetworkTransport } from './drupal-fetch-network-transport';
 /* @ts-ignore */
 import drupalHttpFetch from './playground-mu-plugin/drupal_http_fetch.php?raw';
+/* @ts-ignore */
+import drupalStreamWrapper from './playground-mu-plugin/drupal_stream_wrapper.php?raw';
 
 // post message to parent
 self.postMessage('worker-script-started');
@@ -288,6 +290,14 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 			});
 			await this.drupalNetworkTransport.setupMessageHandler(primaryPhp);
 			await this.drupalNetworkTransport.setEnabled(primaryPhp, true);
+
+			// Write the stream wrapper to preload directory
+			// This intercepts ALL http/https requests at PHP level and routes
+			// them through the CORS proxy. The 0- prefix ensures it loads first.
+			primaryPhp.writeFile(
+				'/internal/shared/preload/0-http-stream-wrapper.php',
+				drupalStreamWrapper
+			);
 
 			// Write the Guzzle handler PHP file so settings.php can include it
 			primaryPhp.mkdir('/internal/shared/drupal-includes');

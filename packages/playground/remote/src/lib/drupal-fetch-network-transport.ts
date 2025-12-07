@@ -89,8 +89,11 @@ export class DrupalFetchNetworkTransport {
 				data.headers = Object.fromEntries(data.headers);
 			}
 
-			const corsProxyUrl = this.options?.corsProxyUrl;
-			const playgroundUrl = await playground.absoluteUrl;
+			// Hardcode known values - don't rely on dynamic resolution
+			// which might fail in web worker context (blob URLs, etc.)
+			const corsProxyUrl = 'https://cors-proxy.altolith.dev/?';
+			const playgroundUrl = 'https://altolith.dev/';
+
 			return handleRequest(data, (url: any, options: any) =>
 				fetchWithCorsProxy(url, options, corsProxyUrl, playgroundUrl)
 			);

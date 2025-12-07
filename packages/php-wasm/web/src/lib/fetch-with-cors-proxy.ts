@@ -1,4 +1,4 @@
-import { cloneRequest, teeRequest } from '@php-wasm/web-service-worker';
+import { cloneRequest } from '@php-wasm/web-service-worker';
 
 export async function fetchWithCorsProxy(
 	input: RequestInfo,
@@ -18,7 +18,21 @@ export async function fetchWithCorsProxy(
 		requestObject = await cloneRequest(requestObject, { url: httpsUrl });
 		requestUrlObj = new URL(httpsUrl);
 	}
+
+	// If no CORS proxy URL is provided, just do a direct fetch
 	if (!corsProxyUrl) {
+		return await fetch(requestObject);
+	}
+
+	// Parse the CORS proxy URL to get its hostname
+	const corsProxyUrlObj = new URL(corsProxyUrl);
+
+	/**
+	 * Never try to proxy requests that are already going through the CORS proxy.
+	 * This prevents infinite loops where we'd end up with URLs like:
+	 * https://cors-proxy.example.com/?https://cors-proxy.example.com/?https://target.com
+	 */
+	if (requestUrlObj.hostname === corsProxyUrlObj.hostname) {
 		return await fetch(requestObject);
 	}
 
@@ -37,17 +51,19 @@ export async function fetchWithCorsProxy(
 		return await fetch(requestObject);
 	}
 
-	// Tee the request to avoid consuming the request body stream on the initial
-	// fetch() so that we can retry through the cors proxy.
-	const [request1, request2] = await teeRequest(requestObject);
+	/**
+	 * Determine if this is an external request (different hostname than playground).
+	 * ALL external requests should go through the CORS proxy by default.
+	 */
+	const isExternalRequest =
+		playgroundUrlObj &&
+		requestUrlObj.hostname !== playgroundUrlObj.hostname;
 
-	try {
-		return await fetch(request1);
-	} catch {
+	if (isExternalRequest) {
 		// If the developer has explicitly allowed the request to pass the
 		// credentials headers with the X-Cors-Proxy-Allowed-Request-Headers header,
 		// then let's include those credentials in the fetch() request.
-		const headers = new Headers(request2.headers);
+		const headers = new Headers(requestObject.headers);
 		const corsProxyAllowedHeaders =
 			headers.get('x-cors-proxy-allowed-request-headers')?.split(',') ||
 			[];
@@ -55,11 +71,14 @@ export async function fetchWithCorsProxy(
 			corsProxyAllowedHeaders.includes('authorization') ||
 			corsProxyAllowedHeaders.includes('cookie');
 
-		const newRequest = await cloneRequest(request2, {
+		const proxiedRequest = await cloneRequest(requestObject, {
 			url: `${corsProxyUrl}${requestObject.url}`,
 			...(requestIntendsToPassCredentials && { credentials: 'include' }),
 		});
 
-		return await fetch(newRequest, init);
+		return await fetch(proxiedRequest, init);
 	}
+
+	// For same-origin requests, do a direct fetch
+	return await fetch(requestObject);
 }

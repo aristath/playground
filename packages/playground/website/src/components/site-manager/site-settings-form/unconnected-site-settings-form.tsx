@@ -82,99 +82,6 @@ export function UnconnectedSiteSettingsForm({
 			<VStack spacing={3} className={css.formSection}>
 				<Controller
 					control={control}
-					name="wpVersion"
-					rules={{
-						required: {
-							message: 'WordPress Version is required',
-							value: true,
-						},
-					}}
-					disabled={!enabledFields.wpVersion}
-					render={({ field: { onChange, ...rest } }) => (
-						<div>
-							<SelectControl
-								size="compact"
-								__nextHasNoMarginBottom={true}
-								label="WordPress Version"
-								labelPosition="side"
-								help={errors.wpVersion?.message}
-								className={classNames(css.addSiteInput, {
-									[css.invalidInput]: !!errors.wpVersion,
-								})}
-								options={
-									/*
-									 * Without an empty option, React sometimes says
-									 * the current selected version is "trunk" when
-									 * `wp` is actually "6.4".
-									 */
-									[
-										{
-											label: '-- Select a version --',
-											value: '',
-										},
-										...Object.keys(
-											supportedWPVersions || {}
-										).map((version) => ({
-											label: `${supportedWPVersions[version]}`,
-											value: version,
-										})),
-									]
-								}
-								onChange={(value, extra) => {
-									onChange(extra?.event);
-								}}
-								{...rest}
-							/>
-
-							{enabledFields.wpVersion && (
-								<a
-									href="https://wordpress.github.io/wordpress-playground/blueprints/examples#load-an-older-wordpress-version"
-									target="_blank"
-									rel="noreferrer"
-									style={{ fontSize: '0.9em' }}
-								>
-									Need an older version?
-								</a>
-							)}
-						</div>
-					)}
-				/>
-
-				<Controller
-					control={control}
-					name="phpVersion"
-					rules={{
-						required: {
-							message: 'PHP Version is required',
-							value: true,
-						},
-					}}
-					render={({ field: { onChange, ...rest } }) => (
-						<SelectControl
-							size="compact"
-							__nextHasNoMarginBottom={true}
-							label="PHP Version"
-							labelPosition="side"
-							help={errors.phpVersion?.message}
-							className={classNames(css.addSiteInput, {
-								[css.invalidInput]: !!errors.phpVersion,
-							})}
-							options={SupportedPHPVersionsList.map(
-								(version) => ({
-									label: `PHP ${version}`,
-									value: version,
-								})
-							)}
-							onChange={(value, extra) => {
-								onChange(extra?.event);
-							}}
-							{...rest}
-						/>
-					)}
-				/>
-
-				<Controller
-					control={control}
 					name="language"
 					render={({ field: { onChange, ...rest } }) => (
 						<SelectControl
@@ -437,39 +344,6 @@ export function UnconnectedSiteSettingsForm({
 								onChange(extra?.event);
 							}}
 							{...rest}
-						/>
-					)}
-				/>
-
-				<Controller
-					control={control}
-					name="withNetworking"
-					render={({ field: { onChange, ref, ...rest } }) => (
-						<CheckboxControl
-							label="Allow network access"
-							onChange={(isChecked) => {
-								setValue('withNetworking', isChecked);
-							}}
-							{...rest}
-							value={rest.value ? 'true' : 'false'}
-							checked={rest.value}
-						/>
-					)}
-				/>
-
-				<Controller
-					control={control}
-					name="multisite"
-					disabled={!enabledFields.multisite}
-					render={({ field: { onChange, ref, ...rest } }) => (
-						<CheckboxControl
-							label="Create a multisite network"
-							onChange={(isChecked) => {
-								setValue('multisite', isChecked);
-							}}
-							{...rest}
-							value={rest.value ? 'true' : 'false'}
-							checked={rest.value}
 						/>
 					)}
 				/>

@@ -23,6 +23,11 @@
  * {"result": "data"}
  */
 
+error_log('[DRUPAL:php:http_fetch] ===== FILE LOADED =====');
+error_log('[DRUPAL:php:http_fetch] PHP_VERSION: ' . PHP_VERSION);
+error_log('[DRUPAL:php:http_fetch] CWD: ' . getcwd());
+error_log('[DRUPAL:php:http_fetch] Network enabled flag: ' . (file_exists('/internal/playground-network-enabled') ? 'YES' : 'NO'));
+
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
@@ -42,15 +47,26 @@ class PlaygroundGuzzleHandler
      */
     public function __invoke(RequestInterface $request, array $options)
     {
+        error_log('[DRUPAL:php:GuzzleHandler] ========== __invoke START ==========');
+        error_log('[DRUPAL:php:GuzzleHandler] Request URI: ' . (string) $request->getUri());
+        error_log('[DRUPAL:php:GuzzleHandler] Request method: ' . $request->getMethod());
+        error_log('[DRUPAL:php:GuzzleHandler] Options: ' . json_encode(array_keys($options)));
+
         // Check if networking is enabled
-        if (!file_exists('/internal/playground-network-enabled')) {
+        $networkEnabled = file_exists('/internal/playground-network-enabled');
+        error_log('[DRUPAL:php:GuzzleHandler] Network enabled: ' . ($networkEnabled ? 'YES' : 'NO'));
+        if (!$networkEnabled) {
+            error_log('[DRUPAL:php:GuzzleHandler] REJECTED: Networking disabled');
             return new RejectedPromise(
                 new \Exception('Networking is disabled in Playground')
             );
         }
 
         // Check if post_message_to_js function exists
-        if (!function_exists('post_message_to_js')) {
+        $hasPostMessage = function_exists('post_message_to_js');
+        error_log('[DRUPAL:php:GuzzleHandler] post_message_to_js exists: ' . ($hasPostMessage ? 'YES' : 'NO'));
+        if (!$hasPostMessage) {
+            error_log('[DRUPAL:php:GuzzleHandler] REJECTED: post_message_to_js not available');
             return new RejectedPromise(
                 new \Exception('post_message_to_js function not available')
             );
@@ -62,6 +78,7 @@ class PlaygroundGuzzleHandler
             foreach ($request->getHeaders() as $name => $values) {
                 $headers[$name] = implode(', ', $values);
             }
+            error_log('[DRUPAL:php:GuzzleHandler] Request headers: ' . json_encode($headers));
 
             // Build the request message
             $message = json_encode([
@@ -73,21 +90,33 @@ class PlaygroundGuzzleHandler
                     'data' => (string) $request->getBody(),
                 ]
             ]);
+            error_log('[DRUPAL:php:GuzzleHandler] Message length: ' . strlen($message));
+            error_log('[DRUPAL:php:GuzzleHandler] Message preview: ' . substr($message, 0, 500));
 
             // Send to JavaScript and get raw HTTP response
+            error_log('[DRUPAL:php:GuzzleHandler] Calling post_message_to_js...');
             $rawResponse = post_message_to_js($message);
+            error_log('[DRUPAL:php:GuzzleHandler] Response received, length: ' . strlen($rawResponse));
+            error_log('[DRUPAL:php:GuzzleHandler] Response preview: ' . substr($rawResponse, 0, 500));
 
             if (empty($rawResponse)) {
+                error_log('[DRUPAL:php:GuzzleHandler] REJECTED: Empty response');
                 return new RejectedPromise(
                     new \Exception('Empty response from JavaScript handler')
                 );
             }
 
             // Parse the raw HTTP response
+            error_log('[DRUPAL:php:GuzzleHandler] Parsing raw HTTP response...');
             $response = $this->parseRawHttpResponse($rawResponse);
+            error_log('[DRUPAL:php:GuzzleHandler] Parsed response status: ' . $response->getStatusCode());
+            error_log('[DRUPAL:php:GuzzleHandler] ========== __invoke END (SUCCESS) ==========');
 
             return new FulfilledPromise($response);
         } catch (\Exception $e) {
+            error_log('[DRUPAL:php:GuzzleHandler] EXCEPTION: ' . $e->getMessage());
+            error_log('[DRUPAL:php:GuzzleHandler] EXCEPTION trace: ' . $e->getTraceAsString());
+            error_log('[DRUPAL:php:GuzzleHandler] ========== __invoke END (EXCEPTION) ==========');
             return new RejectedPromise($e);
         }
     }
@@ -100,14 +129,20 @@ class PlaygroundGuzzleHandler
      */
     private function parseRawHttpResponse($rawResponse)
     {
+        error_log('[DRUPAL:php:parseRawHttpResponse] ========== START ==========');
+        error_log('[DRUPAL:php:parseRawHttpResponse] Raw response length: ' . strlen($rawResponse));
+
         // Split headers and body
         $parts = explode("\r\n\r\n", $rawResponse, 2);
         $headerSection = $parts[0] ?? '';
         $body = $parts[1] ?? '';
+        error_log('[DRUPAL:php:parseRawHttpResponse] Header section length: ' . strlen($headerSection));
+        error_log('[DRUPAL:php:parseRawHttpResponse] Body length: ' . strlen($body));
 
         // Parse status line and headers
         $lines = explode("\r\n", $headerSection);
         $statusLine = array_shift($lines);
+        error_log('[DRUPAL:php:parseRawHttpResponse] Status line: ' . $statusLine);
 
         // Parse status code from "HTTP/1.1 200 OK"
         $statusCode = 200;
@@ -116,6 +151,8 @@ class PlaygroundGuzzleHandler
             $statusCode = (int) $matches[1];
             $reasonPhrase = trim($matches[2]);
         }
+        error_log('[DRUPAL:php:parseRawHttpResponse] Parsed status code: ' . $statusCode);
+        error_log('[DRUPAL:php:parseRawHttpResponse] Parsed reason phrase: ' . $reasonPhrase);
 
         // Parse headers
         $headers = [];
@@ -130,6 +167,9 @@ class PlaygroundGuzzleHandler
                 $headers[$name][] = $value;
             }
         }
+        error_log('[DRUPAL:php:parseRawHttpResponse] Parsed headers count: ' . count($headers));
+        error_log('[DRUPAL:php:parseRawHttpResponse] Parsed headers: ' . json_encode(array_keys($headers)));
+        error_log('[DRUPAL:php:parseRawHttpResponse] ========== END ==========');
 
         return new Response($statusCode, $headers, $body, '1.1', $reasonPhrase);
     }
@@ -144,5 +184,6 @@ class PlaygroundGuzzleHandler
  */
 function playground_create_guzzle_handler()
 {
+    error_log('[DRUPAL:php:playground_create_guzzle_handler] Creating new PlaygroundGuzzleHandler instance');
     return new PlaygroundGuzzleHandler();
 }

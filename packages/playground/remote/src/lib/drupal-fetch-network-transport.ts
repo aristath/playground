@@ -40,7 +40,18 @@ export class DrupalFetchNetworkTransport {
 	private options: SetupFetchNetworkTransportOptions;
 
 	constructor(options?: SetupFetchNetworkTransportOptions) {
+		console.log(
+			'🌐 [DRUPAL:network:constructor] ========== CONSTRUCTOR =========='
+		);
+		console.log(
+			'🌐 [DRUPAL:network:constructor] options:',
+			JSON.stringify(options)
+		);
 		this.options = options || {};
+		console.log(
+			'🌐 [DRUPAL:network:constructor] this.options:',
+			JSON.stringify(this.options)
+		);
 	}
 
 	/**
@@ -51,15 +62,35 @@ export class DrupalFetchNetworkTransport {
 		playground: UniversalPHP,
 		enabled: boolean
 	): Promise<void> {
+		console.log(
+			'🌐 [DRUPAL:network:setEnabled] ========== START =========='
+		);
+		console.log('🌐 [DRUPAL:network:setEnabled] enabled:', enabled);
 		// Write a flag file that the Guzzle handler will check
 		const flagPath = '/internal/playground-network-enabled';
+		console.log('🌐 [DRUPAL:network:setEnabled] flagPath:', flagPath);
 		if (enabled) {
+			console.log('🌐 [DRUPAL:network:setEnabled] Writing flag file...');
 			playground.writeFile(flagPath, '1');
+			console.log('🌐 [DRUPAL:network:setEnabled] Flag file written');
+			// Verify
+			const exists = playground.fileExists(flagPath);
+			console.log(
+				'🌐 [DRUPAL:network:setEnabled] Verification - exists:',
+				exists
+			);
 		} else {
+			console.log('🌐 [DRUPAL:network:setEnabled] Removing flag file...');
 			if (playground.fileExists(flagPath)) {
 				playground.unlink(flagPath);
+				console.log('🌐 [DRUPAL:network:setEnabled] Flag file removed');
+			} else {
+				console.log(
+					'🌐 [DRUPAL:network:setEnabled] Flag file did not exist'
+				);
 			}
 		}
+		console.log('🌐 [DRUPAL:network:setEnabled] ========== END ==========');
 	}
 
 	/**
@@ -67,18 +98,58 @@ export class DrupalFetchNetworkTransport {
 	 * This intercepts JSON messages from PHP and makes actual HTTP requests.
 	 */
 	async setupMessageHandler(playground: UniversalPHP) {
-		return await playground.onMessage(async (message: string) => {
+		console.log(
+			'🌐 [DRUPAL:network:setupMessageHandler] ========== START =========='
+		);
+		console.log(
+			'🌐 [DRUPAL:network:setupMessageHandler] Setting up onMessage handler...'
+		);
+
+		const result = await playground.onMessage(async (message: string) => {
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] ========== MESSAGE RECEIVED =========='
+			);
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] message length:',
+				message.length
+			);
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] message preview:',
+				message.substring(0, 500)
+			);
+
 			let envelope: RequestMessage;
 			try {
 				// PHP-WASM sends messages as strings, so we can't expect valid JSON.
 				envelope = JSON.parse(message);
-			} catch {
+				console.log(
+					'🌐 [DRUPAL:network:onMessage] Parsed envelope type:',
+					envelope.type
+				);
+			} catch (e) {
+				console.log(
+					'🌐 [DRUPAL:network:onMessage] JSON parse failed:',
+					e
+				);
 				return '';
 			}
 			const { type, data } = envelope;
 			if (type !== 'request') {
+				console.log(
+					'🌐 [DRUPAL:network:onMessage] Not a request type, ignoring'
+				);
 				return '';
 			}
+
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] Request data:',
+				JSON.stringify({
+					url: data.url,
+					method: data.method,
+					headersCount: Object.keys(data.headers || {}).length,
+					dataLength: (data.data || '').length,
+				})
+			);
 
 			// PHP encodes empty arrays as JSON arrays, not objects.
 			// We can't easily reason about the request body, but we know
@@ -94,14 +165,67 @@ export class DrupalFetchNetworkTransport {
 			const corsProxyUrl = 'https://cors-proxy.altolith.dev/?';
 			const playgroundUrl = 'https://altolith.dev/';
 
-			return handleRequest(data, (url: any, options: any) =>
-				fetchWithCorsProxy(url, options, corsProxyUrl, playgroundUrl)
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] Making fetch request...'
 			);
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] corsProxyUrl:',
+				corsProxyUrl
+			);
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] playgroundUrl:',
+				playgroundUrl
+			);
+
+			const response = await handleRequest(
+				data,
+				(url: any, options: any) =>
+					fetchWithCorsProxy(
+						url,
+						options,
+						corsProxyUrl,
+						playgroundUrl
+					)
+			);
+
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] Response received, length:',
+				response.length
+			);
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] Response preview:',
+				new TextDecoder().decode(response.slice(0, 500))
+			);
+			console.log(
+				'🌐 [DRUPAL:network:onMessage] ========== MESSAGE END =========='
+			);
+
+			return response;
 		});
+
+		console.log(
+			'🌐 [DRUPAL:network:setupMessageHandler] Handler registered'
+		);
+		console.log(
+			'🌐 [DRUPAL:network:setupMessageHandler] ========== END =========='
+		);
+		return result;
 	}
 }
 
 export async function handleRequest(data: RequestData, fetchFn = fetch) {
+	console.log('🌐 [DRUPAL:handleRequest] ========== START ==========');
+	console.log('🌐 [DRUPAL:handleRequest] data.url:', data.url);
+	console.log('🌐 [DRUPAL:handleRequest] data.method:', data.method);
+	console.log(
+		'🌐 [DRUPAL:handleRequest] data.headers:',
+		JSON.stringify(data.headers)
+	);
+	console.log(
+		'🌐 [DRUPAL:handleRequest] data.data length:',
+		(data.data || '').length
+	);
+
 	let response;
 	try {
 		const fetchMethod = data.method || 'GET';
@@ -115,15 +239,26 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 			fetchHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
 		}
 
+		console.log('🌐 [DRUPAL:handleRequest] fetchMethod:', fetchMethod);
+		console.log(
+			'🌐 [DRUPAL:handleRequest] fetchHeaders:',
+			JSON.stringify(fetchHeaders)
+		);
 		logger.debug(`[Drupal Network] ${fetchMethod} ${data.url}`);
 
+		console.log('🌐 [DRUPAL:handleRequest] Calling fetchFn...');
 		response = await fetchFn(data.url, {
 			method: fetchMethod,
 			headers: fetchHeaders,
 			body: fetchMethod === 'GET' ? undefined : data.data,
 			credentials: 'omit',
 		});
+		console.log(
+			'🌐 [DRUPAL:handleRequest] fetchFn returned, status:',
+			response.status
+		);
 	} catch (error) {
+		console.log('🌐 [DRUPAL:handleRequest] FETCH ERROR:', error);
 		logger.warn(`[Drupal Network] Request failed: ${data.url}`, error);
 		return new TextEncoder().encode(
 			`HTTP/1.1 400 Invalid Request\r\ncontent-type: text/plain\r\n\r\nPlayground could not serve the request.`
@@ -134,6 +269,10 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 	response.headers.forEach((value, key) => {
 		responseHeaders.push(key + ': ' + value);
 	});
+	console.log(
+		'🌐 [DRUPAL:handleRequest] responseHeaders count:',
+		responseHeaders.length
+	);
 
 	/*
 	 * Technically we should only send ASCII here and ensure we don't send control

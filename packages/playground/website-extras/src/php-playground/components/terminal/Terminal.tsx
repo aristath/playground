@@ -369,7 +369,7 @@ export const TerminalComponent = ({
 			term.writeln('\r\nPreparing Composer...');
 			autoScroll();
 			const binary = await downloadWithProgress(
-				'https://wordpress-playground-cors-proxy.net/?https://getcomposer.org/download/2.8.12/composer.phar',
+				'https://cors-proxy.altolith.dev/?https://getcomposer.org/download/2.8.12/composer.phar',
 				'Composer download'
 			);
 			await client.writeFile(`${path}`, binary);
@@ -416,7 +416,7 @@ if(!function_exists('grapheme_substr')) {
 							} catch {
 								/* ignore errors */
 							}
-					  }
+						}
 					: null;
 			let aborted = false;
 			const activeProcess = {

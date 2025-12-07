@@ -28,9 +28,11 @@ import drupalHttpFetch from './playground-mu-plugin/drupal_http_fetch.php?raw';
 import drupalStreamWrapper from './playground-mu-plugin/drupal_stream_wrapper.php?raw';
 
 // post message to parent
+console.log('🚀 [WORKER:blueprints-v1] ===== SCRIPT LOADED =====');
 self.postMessage('worker-script-started');
 
 const downloadMonitor = new EmscriptenDownloadMonitor();
+console.log('🚀 [WORKER:blueprints-v1] downloadMonitor created');
 
 class ArtifactExpiredError extends Error {
 	constructor(message = 'GitHub artifact expired') {
@@ -42,6 +44,13 @@ class ArtifactExpiredError extends Error {
 class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 	private currentCmsType: 'wordpress' | 'drupal' = 'wordpress';
 	private drupalNetworkTransport: DrupalFetchNetworkTransport | undefined;
+
+	constructor(monitor: EmscriptenDownloadMonitor) {
+		super(monitor);
+		console.log(
+			'🚀 [WORKER:PlaygroundWorkerEndpointBlueprintsV1] Constructor called'
+		);
+	}
 
 	override async boot({
 		scope,
@@ -57,22 +66,66 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		shouldInstallWordPress = true,
 		corsProxyUrl,
 	}: WorkerBootOptions) {
+		console.log(
+			'🚀 [WORKER:boot] ==================== BOOT START ===================='
+		);
+		console.log(
+			'🚀 [WORKER:boot] FULL OPTIONS:',
+			JSON.stringify(
+				{
+					scope,
+					mountsCount: mounts.length,
+					cmsType,
+					wpVersion,
+					drupalVersion,
+					sqliteDriverVersion,
+					phpVersion,
+					sapiName,
+					withIntl,
+					withNetworking,
+					shouldInstallWordPress,
+					corsProxyUrl: corsProxyUrl ? 'set' : 'unset',
+				},
+				null,
+				2
+			)
+		);
+
 		if (this.booted) {
+			console.log('🚀 [WORKER:boot] ERROR: Already booted!');
 			throw new Error('Playground already booted');
 		}
 		if (corsProxyUrl === undefined) {
+			console.log('🚀 [WORKER:boot] Using default CORS proxy URL');
 			corsProxyUrl = defaultCorsProxyUrl as any;
 		}
+		console.log('🚀 [WORKER:boot] corsProxyUrl resolved:', corsProxyUrl);
+
 		this.booted = true;
 		this.scope = scope;
 		this.currentCmsType = cmsType;
+		console.log(
+			'🚀 [WORKER:boot] State set: booted=true, scope=',
+			scope,
+			'currentCmsType=',
+			cmsType
+		);
 
 		try {
 			// eslint-disable-next-line @typescript-eslint/no-this-alias
 			const endpoint = this;
 			const knownRemoteAssetPaths = new Set<string>();
 			const siteUrl = this.computeSiteUrl(scope);
+			console.log('🚀 [WORKER:boot] siteUrl computed:', siteUrl);
 
+			const targetDocumentRoot =
+				cmsType === 'drupal' ? '/drupal' : '/wordpress';
+			console.log(
+				'🚀 [WORKER:boot] Target documentRoot:',
+				targetDocumentRoot
+			);
+
+			console.log('🚀 [WORKER:boot] Creating request handler...');
 			const requestHandler = await this.createRequestHandler({
 				siteUrl,
 				sapiName,
@@ -81,9 +134,17 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 				withIntl,
 				withNetworking,
 				phpVersion: phpVersion!,
+				documentRoot: targetDocumentRoot,
 			});
+			console.log(
+				'🚀 [WORKER:boot] Request handler created, documentRoot:',
+				requestHandler.documentRoot
+			);
 
 			if (cmsType === 'drupal') {
+				console.log(
+					'🚀 [WORKER:boot] CMS type is drupal, calling bootDrupalCMS...'
+				);
 				// Boot Drupal
 				await this.bootDrupalCMS({
 					requestHandler,
@@ -95,7 +156,11 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 					corsProxyUrl,
 					withNetworking,
 				});
+				console.log('🚀 [WORKER:boot] bootDrupalCMS completed');
 			} else {
+				console.log(
+					'🚀 [WORKER:boot] CMS type is wordpress, calling bootWordPressCMS...'
+				);
 				// Boot WordPress (default)
 				await this.bootWordPressCMS({
 					requestHandler,
@@ -107,15 +172,25 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 					shouldInstall: shouldInstallWordPress,
 					corsProxyUrl,
 				});
+				console.log('🚀 [WORKER:boot] bootWordPressCMS completed');
 			}
 
+			console.log('🚀 [WORKER:boot] Calling finalizeAfterBoot...');
 			await this.finalizeAfterBoot(
 				requestHandler,
 				withNetworking,
 				knownRemoteAssetPaths
 			);
+			console.log('🚀 [WORKER:boot] finalizeAfterBoot completed');
 			setApiReady();
+			console.log(
+				'🚀 [WORKER:boot] ==================== BOOT END (SUCCESS) ===================='
+			);
 		} catch (e) {
+			console.log(
+				'🚀 [WORKER:boot] ==================== BOOT FAILED ===================='
+			);
+			console.log('🚀 [WORKER:boot] Error:', e);
 			setAPIError(e as Error);
 			throw e as Error;
 		}

@@ -127,6 +127,7 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 		withIntl,
 		withNetworking,
 		phpVersion,
+		documentRoot,
 	}: {
 		siteUrl: string;
 		sapiName: string;
@@ -135,6 +136,7 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 		withIntl: boolean;
 		withNetworking: boolean;
 		phpVersion: SupportedPHPVersion;
+		documentRoot?: string;
 	}) {
 		const phpIniEntries: Record<string, string> = {
 			'openssl.cafile': '/internal/shared/ca-bundle.crt',
@@ -184,6 +186,7 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 		const parsedSiteUrl = new URL(siteUrl);
 		const requestHandler = await bootRequestHandler({
 			siteUrl,
+			documentRoot,
 			createPhpRuntime: async () => {
 				let wasmUrl = '';
 				return await loadWebRuntime(phpVersion, {

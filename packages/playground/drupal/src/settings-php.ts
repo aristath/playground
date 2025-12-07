@@ -14,12 +14,19 @@ export interface DrupalSettingsOptions {
  * Generates a random hash salt for Drupal.
  */
 function generateHashSalt(): string {
+	console.log(
+		'📝 [DRUPAL:settings:generateHashSalt] Generating hash salt...'
+	);
 	const chars =
 		'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
 	let result = '';
 	for (let i = 0; i < 74; i++) {
 		result += chars.charAt(Math.floor(Math.random() * chars.length));
 	}
+	console.log(
+		'📝 [DRUPAL:settings:generateHashSalt] Generated salt length:',
+		result.length
+	);
 	return result;
 }
 
@@ -30,19 +37,48 @@ function generateHashSalt(): string {
  * (unlike WordPress which requires the sqlite-database-integration plugin).
  */
 export function generateSettingsPhp(options: DrupalSettingsOptions): string {
+	console.log(
+		'📝 [DRUPAL:settings:generateSettingsPhp] ========== START =========='
+	);
+	console.log(
+		'📝 [DRUPAL:settings:generateSettingsPhp] options:',
+		JSON.stringify({
+			siteUrl: options.siteUrl,
+			hasHashSalt: !!options.hashSalt,
+			databasePath: options.databasePath,
+		})
+	);
+
 	const hashSalt = options.hashSalt || generateHashSalt();
 	const databasePath = options.databasePath || '.ht.sqlite';
+
+	console.log(
+		'📝 [DRUPAL:settings:generateSettingsPhp] hashSalt length:',
+		hashSalt.length
+	);
+	console.log(
+		'📝 [DRUPAL:settings:generateSettingsPhp] databasePath:',
+		databasePath
+	);
 
 	// Extract hostname for trusted_host_patterns
 	let hostname = '*';
 	try {
 		const url = new URL(options.siteUrl);
 		hostname = url.hostname.replace(/\./g, '\\.');
-	} catch {
+		console.log(
+			'📝 [DRUPAL:settings:generateSettingsPhp] Parsed hostname:',
+			hostname
+		);
+	} catch (e) {
+		console.log(
+			'📝 [DRUPAL:settings:generateSettingsPhp] Failed to parse URL:',
+			e
+		);
 		// If URL parsing fails, use a permissive pattern
 	}
 
-	return `<?php
+	const content = `<?php
 
 /**
  * Drupal settings for WordPress Playground.
@@ -143,6 +179,15 @@ if (file_exists('/internal/shared/drupal-includes/drupal_http_fetch.php')) {
 }
 
 `;
+
+	console.log(
+		'📝 [DRUPAL:settings:generateSettingsPhp] Generated content length:',
+		content.length
+	);
+	console.log(
+		'📝 [DRUPAL:settings:generateSettingsPhp] ========== END =========='
+	);
+	return content;
 }
 
 /**
@@ -153,42 +198,111 @@ export async function writeSettingsPhp(
 	documentRoot: string,
 	options: DrupalSettingsOptions
 ): Promise<void> {
+	console.log('📝 [DRUPAL:writeSettingsPhp] ========== START ==========');
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] php.documentRoot:',
+		php.documentRoot
+	);
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] documentRoot param:',
+		documentRoot
+	);
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] options:',
+		JSON.stringify(options)
+	);
+
 	const settingsDir = joinPaths(documentRoot, 'sites/default');
 	const settingsPath = joinPaths(settingsDir, 'settings.php');
 
+	console.log('📝 [DRUPAL:writeSettingsPhp] settingsDir:', settingsDir);
+	console.log('📝 [DRUPAL:writeSettingsPhp] settingsPath:', settingsPath);
+
 	// Create the sites/default directory if it doesn't exist
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] Checking settingsDir exists:',
+		php.isDir(settingsDir)
+	);
 	if (!php.isDir(settingsDir)) {
+		console.log('📝 [DRUPAL:writeSettingsPhp] Creating settingsDir...');
 		php.mkdir(settingsDir);
+		console.log('📝 [DRUPAL:writeSettingsPhp] settingsDir created');
 	}
 
 	// Create the files directory for the SQLite database
 	const filesDir = joinPaths(settingsDir, 'files');
+	console.log('📝 [DRUPAL:writeSettingsPhp] filesDir:', filesDir);
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] Checking filesDir exists:',
+		php.isDir(filesDir)
+	);
 	if (!php.isDir(filesDir)) {
+		console.log('📝 [DRUPAL:writeSettingsPhp] Creating filesDir...');
 		php.mkdir(filesDir);
+		console.log('📝 [DRUPAL:writeSettingsPhp] filesDir created');
 	}
 
 	// Create config_sync directory
 	const configSyncDir = joinPaths(filesDir, 'config_sync');
+	console.log('📝 [DRUPAL:writeSettingsPhp] configSyncDir:', configSyncDir);
 	if (!php.isDir(configSyncDir)) {
+		console.log('📝 [DRUPAL:writeSettingsPhp] Creating configSyncDir...');
 		php.mkdir(configSyncDir);
+		console.log('📝 [DRUPAL:writeSettingsPhp] configSyncDir created');
 	}
 
 	// Create private files directory
 	const privateDir = joinPaths(filesDir, 'private');
+	console.log('📝 [DRUPAL:writeSettingsPhp] privateDir:', privateDir);
 	if (!php.isDir(privateDir)) {
+		console.log('📝 [DRUPAL:writeSettingsPhp] Creating privateDir...');
 		php.mkdir(privateDir);
+		console.log('📝 [DRUPAL:writeSettingsPhp] privateDir created');
 	}
 
 	// Write the settings.php file
+	console.log('📝 [DRUPAL:writeSettingsPhp] Generating settings content...');
 	const settingsContent = generateSettingsPhp(options);
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] Content generated, length:',
+		settingsContent.length
+	);
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] First 300 chars:',
+		settingsContent.substring(0, 300)
+	);
+
+	console.log('📝 [DRUPAL:writeSettingsPhp] Writing file to:', settingsPath);
 	php.writeFile(settingsPath, settingsContent);
+	console.log('📝 [DRUPAL:writeSettingsPhp] File written');
+
+	// Verify the write
+	const exists = php.fileExists(settingsPath);
+	console.log(
+		'📝 [DRUPAL:writeSettingsPhp] Verification - file exists:',
+		exists
+	);
+	if (exists) {
+		const readBack = php.readFileAsText(settingsPath);
+		console.log(
+			'📝 [DRUPAL:writeSettingsPhp] Verification - readback length:',
+			readBack.length
+		);
+		console.log(
+			'📝 [DRUPAL:writeSettingsPhp] Verification - matches:',
+			readBack === settingsContent
+		);
+	}
+
+	console.log('📝 [DRUPAL:writeSettingsPhp] ========== END ==========');
 }
 
 /**
  * Creates a services.yml file with development settings.
  */
 export function generateServicesYml(): string {
-	return `parameters:
+	console.log('📝 [DRUPAL:generateServicesYml] Generating services.yml...');
+	const content = `parameters:
   session.storage.options:
     gc_probability: 1
     gc_divisor: 100
@@ -202,6 +316,11 @@ services:
   cache.backend.null:
     class: Drupal\\Core\\Cache\\NullBackendFactory
 `;
+	console.log(
+		'📝 [DRUPAL:generateServicesYml] Generated content length:',
+		content.length
+	);
+	return content;
 }
 
 /**
@@ -211,7 +330,20 @@ export async function writeServicesYml(
 	php: PHP,
 	documentRoot: string
 ): Promise<void> {
+	console.log('📝 [DRUPAL:writeServicesYml] ========== START ==========');
+	console.log('📝 [DRUPAL:writeServicesYml] documentRoot:', documentRoot);
+
 	const servicesPath = joinPaths(documentRoot, 'sites/default/services.yml');
+	console.log('📝 [DRUPAL:writeServicesYml] servicesPath:', servicesPath);
+
 	const servicesContent = generateServicesYml();
+	console.log('📝 [DRUPAL:writeServicesYml] Writing services.yml...');
 	php.writeFile(servicesPath, servicesContent);
+	console.log('📝 [DRUPAL:writeServicesYml] services.yml written');
+
+	// Verify
+	const exists = php.fileExists(servicesPath);
+	console.log('📝 [DRUPAL:writeServicesYml] Verification - exists:', exists);
+
+	console.log('📝 [DRUPAL:writeServicesYml] ========== END ==========');
 }

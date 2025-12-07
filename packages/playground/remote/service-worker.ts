@@ -109,9 +109,12 @@ import {
 	cloneRequest,
 	broadcastMessageExpectReply,
 } from '@php-wasm/web-service-worker';
+import { fetchWithCorsProxy } from '@php-wasm/web';
 import { wordPressRewriteRules } from '@wp-playground/wordpress';
 import { drupalRewriteRules } from '@wp-playground/drupal';
 import { reportServiceWorkerMetrics } from '@php-wasm/logger';
+/* @ts-ignore */
+import { corsProxyUrl } from 'virtual:cors-proxy-url';
 
 import {
 	cacheFirstFetch,
@@ -264,6 +267,30 @@ self.addEventListener('fetch', (event) => {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Proxy external requests through the CORS proxy.
+	 *
+	 * This catches all cross-origin JavaScript fetch() requests that would
+	 * otherwise fail with CORS errors. This is especially important for
+	 * Drupal, which makes requests to updates.drupal.org during installation.
+	 */
+	const isExternalRequest =
+		url.hostname !== self.location.hostname &&
+		!url.hostname.includes('localhost') &&
+		!url.hostname.includes('127.0.0.1') &&
+		url.protocol.startsWith('http');
+
+	if (isExternalRequest && corsProxyUrl) {
+		return event.respondWith(
+			fetchWithCorsProxy(
+				event.request,
+				undefined,
+				corsProxyUrl,
+				self.location.origin
+			)
+		);
 	}
 
 	if (!shouldCacheUrl(new URL(event.request.url))) {

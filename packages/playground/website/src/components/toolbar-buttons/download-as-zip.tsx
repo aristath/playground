@@ -1,4 +1,4 @@
-import { MenuItem } from '../ui';
+import { MenuItem } from '@wordpress/components';
 
 import type { PlaygroundClient } from '@wp-playground/client';
 import { zipWpContent } from '@wp-playground/client';

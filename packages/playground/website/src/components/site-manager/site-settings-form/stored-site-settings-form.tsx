@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../lib/state/redux/store';
 import css from './style.module.css';
-import { Icon, Button, VStack, HStack, info } from '../../ui';
+import {
+	Icon,
+	Button,
+	__experimentalVStack as VStack,
+	__experimentalHStack as HStack,
+} from '@wordpress/components';
+import { info } from '@wordpress/icons';
 import {
 	selectSiteBySlug,
 	updateSiteMetadata,

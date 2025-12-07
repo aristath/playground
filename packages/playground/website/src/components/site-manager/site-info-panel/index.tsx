@@ -7,10 +7,8 @@ import {
 	MenuGroup,
 	MenuItem,
 	TabPanel,
-	chevronLeft,
-	edit,
-	moreVertical,
-} from '../../ui';
+} from '@wordpress/components';
+import { chevronLeft, edit, moreVertical } from '@wordpress/icons';
 import { getLogoDataURL, WordPressIcon } from '@wp-playground/components';
 import classNames from 'classnames';
 import { lazy, Suspense, useEffect, useState } from 'react';
@@ -183,7 +181,9 @@ export function SiteInfoPanel({
 								<Button
 									variant="link"
 									label="Back to sites list"
-									icon={<Icon icon={chevronLeft} size={38} />}
+									icon={() => (
+										<Icon icon={chevronLeft} size={38} />
+									)}
 									className={css.grayLinkDark}
 									onClick={() => {
 										dispatch(

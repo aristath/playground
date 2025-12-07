@@ -5,7 +5,12 @@ import {
 	useRef,
 	type CSSProperties,
 } from 'react';
-import { Button, BaseControl, TextControl, RadioControl } from '../ui';
+import {
+	Button,
+	BaseControl,
+	TextControl,
+	RadioControl,
+} from '@wordpress/components';
 import { Modal } from '../modal';
 import ModalButtons from '../modal/modal-buttons';
 import { useAppDispatch, useAppSelector } from '../../lib/state/redux/store';

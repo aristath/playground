@@ -1,5 +1,5 @@
-import { Icon, folder, layout } from '../../ui';
-import { ClockIcon } from '@wp-playground/components';
+import { Icon } from '@wordpress/components';
+import { ClockIcon, folder, layout } from '@wp-playground/components';
 import css from './style.module.css';
 import type { SiteStorageType } from '../../../lib/state/redux/slice-sites';
 

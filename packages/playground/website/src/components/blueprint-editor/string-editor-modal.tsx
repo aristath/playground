@@ -25,7 +25,7 @@ import {
 	keymap,
 	lineNumbers,
 } from '@codemirror/view';
-import { Button, Flex, FlexItem, SelectControl } from '../ui';
+import { Button, Flex, FlexItem, SelectControl } from '@wordpress/components';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from '../modal';
 import {

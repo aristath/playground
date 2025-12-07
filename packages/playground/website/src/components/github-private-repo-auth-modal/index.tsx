@@ -1,7 +1,7 @@
 import { Modal } from '../modal';
 import { useAppDispatch, useAppSelector } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
-import { Icon } from '../ui';
+import { Icon } from '@wordpress/components';
 import { GitHubIcon } from '../../github/github';
 import css from '../../github/github-oauth-guard/style.module.css';
 import { staticAnalyzeGitHubURL } from '../../github/analyze-github-url';

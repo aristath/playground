@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { PlaygroundClient } from '@wp-playground/client';
-import { Notice, VStack } from '../../ui';
+import { Notice, __experimentalVStack as VStack } from '@wordpress/components';
 import { DownloadButton } from './download-button';
 import { AdminerButton } from './adminer-button';
 import { PhpMyAdminButton } from './phpmyadmin-button';

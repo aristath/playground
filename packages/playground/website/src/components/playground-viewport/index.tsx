@@ -11,7 +11,7 @@ import {
 } from '../../lib/state/redux/store';
 import { removeClientInfo } from '../../lib/state/redux/slice-clients';
 import { bootSiteClient } from '../../lib/state/redux/boot-site-client';
-import { Spinner } from '../ui';
+import { Spinner } from '@wordpress/components';
 import {
 	selectSiteBySlug,
 	selectSitesLoaded,

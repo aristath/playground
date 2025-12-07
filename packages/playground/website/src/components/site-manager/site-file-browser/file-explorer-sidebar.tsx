@@ -5,7 +5,8 @@ import {
 	type Dispatch,
 	type SetStateAction,
 } from 'react';
-import { Icon, folder as folderIcon, page as fileIcon } from '../../ui';
+import { Icon } from '@wordpress/components';
+import { file as folderIcon, page as fileIcon } from '@wordpress/icons';
 import styles from './file-explorer.module.css';
 import {
 	FilePickerTree,

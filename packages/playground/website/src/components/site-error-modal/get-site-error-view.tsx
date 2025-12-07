@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '../ui';
+import { Button } from '@wordpress/components';
 import css from './style.module.css';
 import type { SiteError } from '../../lib/state/redux/slice-ui';
 import type { SiteInfo } from '../../lib/state/redux/slice-sites';

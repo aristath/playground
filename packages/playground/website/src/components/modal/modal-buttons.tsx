@@ -1,5 +1,5 @@
+import { Button, Flex } from '@wordpress/components';
 import React from 'react';
-import { Button, Flex } from '../ui';
 import css from './style.module.css';
 
 interface ModalButtonsProps {
@@ -19,7 +19,7 @@ export default function ModalButtons({
 	style,
 }: ModalButtonsProps) {
 	return (
-		<Flex justify="flex-end" className={css.modalButtons} style={style}>
+		<Flex justify="end" className={css.modalButtons} style={style}>
 			<Button
 				type="button"
 				isBusy={areBusy}

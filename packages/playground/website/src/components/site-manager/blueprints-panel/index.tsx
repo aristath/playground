@@ -5,11 +5,11 @@ import {
 	FlexItem,
 	Spinner,
 	Icon,
-	Text,
-	VStack,
-	HStack,
-	chevronLeft,
-} from '../../ui';
+	__experimentalText as Text,
+	__experimentalVStack as VStack,
+	__experimentalHStack as HStack,
+} from '@wordpress/components';
+import { chevronLeft } from '@wordpress/icons';
 import { DataViews } from '@wordpress/dataviews';
 import type { Field, View } from '@wordpress/dataviews';
 import classNames from 'classnames';
@@ -146,12 +146,12 @@ export function BlueprintsPanel({
 									<Button
 										variant="link"
 										label="Back to sites list"
-										icon={
+										icon={() => (
 											<Icon
 												icon={chevronLeft}
 												size={38}
 											/>
-										}
+										)}
 										className={css.grayLinkDark}
 										onClick={() => {
 											dispatch(

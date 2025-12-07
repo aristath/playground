@@ -4,7 +4,7 @@ import { logEventType, logger } from '@php-wasm/logger';
 import classNames from 'classnames';
 import css from './style.module.css';
 import { Modal } from '../modal';
-import { TextControl } from '../ui';
+import { TextControl } from '@wordpress/components';
 import type {
 	PlaygroundDispatch,
 	PlaygroundReduxState,

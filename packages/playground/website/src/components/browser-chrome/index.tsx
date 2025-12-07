@@ -2,7 +2,7 @@ import React from 'react';
 import css from './style.module.css';
 import AddressBar from '../address-bar';
 import classNames from 'classnames';
-import { useMediaQuery, Dropdown, Icon, cog } from '../ui';
+import { useMediaQuery } from '@wordpress/compose';
 import {
 	useAppSelector,
 	getActiveClientInfo,
@@ -10,7 +10,9 @@ import {
 	useAppDispatch,
 } from '../../lib/state/redux/store';
 import { SyncLocalFilesButton } from '../sync-local-files-button';
+import { Dropdown, Icon } from '@wordpress/components';
 import { Modal } from '../../components/modal';
+import { cog } from '@wordpress/icons';
 import Button from '../button';
 import { ActiveSiteSettingsForm } from '../site-manager/site-settings-form';
 import { setSiteManagerOpen } from '../../lib/state/redux/slice-ui';

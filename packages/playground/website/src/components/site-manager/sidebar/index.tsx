@@ -1,21 +1,20 @@
 import css from './style.module.css';
 import classNames from 'classnames';
 import {
-	SidebarHeading as Heading,
+	__experimentalHeading as Heading,
 	NavigableMenu,
 	MenuGroup,
-	SidebarMenuItem as MenuItem,
-	HStack,
+	MenuItem,
+	__experimentalHStack as HStack,
 	FlexBlock,
 	Icon,
-	ItemGroup,
-	Item,
+	__experimentalItemGroup as ItemGroup,
+	__experimentalItem as Item,
 	Flex,
 	DropdownMenu,
 	Button,
-	page,
-	close,
-} from '../../ui';
+} from '@wordpress/components';
+import { page, close } from '@wordpress/icons';
 import { ClockIcon, WordPressIcon } from '@wp-playground/components';
 import {
 	setActiveSite,
@@ -241,7 +240,7 @@ export function Sidebar({
 				{storedSites.length > 0 && (
 					<>
 						<Heading
-							size={400}
+							level="2"
 							className={classNames(
 								css.sidebarLabel,
 								css.sidebarListLabel
@@ -323,7 +322,7 @@ export function Sidebar({
 			<footer
 				className={classNames(css.sidebarSection, css.sidebarFooter)}
 			>
-				<Heading size={400} className={css.sidebarLabel}>
+				<Heading level="2" className={css.sidebarLabel}>
 					Resources
 				</Heading>
 				<ItemGroup className={css.sidebarList}>

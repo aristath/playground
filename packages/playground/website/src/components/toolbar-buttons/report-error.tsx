@@ -1,4 +1,4 @@
-import { MenuItem } from '../ui';
+import { MenuItem } from '@wordpress/components';
 
 type Props = { onClose: () => void; disabled?: boolean };
 export function ReportError({ onClose, disabled }: Props) {

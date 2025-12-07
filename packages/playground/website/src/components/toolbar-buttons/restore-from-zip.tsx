@@ -1,4 +1,4 @@
-import { MenuItem } from '../ui';
+import { MenuItem } from '@wordpress/components';
 import { modalSlugs, setActiveModal } from '../../lib/state/redux/slice-ui';
 import type { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';

@@ -1,20 +1,13 @@
 import React from 'react';
-import { Modal as EvergreenModal, ModalProps as BaseModalProps } from '../ui';
+import { Modal as WordPressModal } from '@wordpress/components';
+import type { ModalProps as WordPressModalProps } from '@wordpress/components/build-types/modal/types';
 import classNames from 'classnames';
 import css from './style.module.css';
 
-interface ModalProps extends Omit<BaseModalProps, 'className'> {
-	className?: string;
+interface ModalProps extends WordPressModalProps {
+	small?: boolean;
 }
-
-export function Modal({
-	small,
-	className,
-	children,
-	title,
-	onRequestClose,
-	...rest
-}: ModalProps) {
+export function Modal({ small, className, children, ...rest }: ModalProps) {
 	const modalClass = classNames(
 		css.modal,
 		{
@@ -24,14 +17,8 @@ export function Modal({
 	);
 
 	return (
-		<EvergreenModal
-			title={title}
-			onRequestClose={onRequestClose}
-			className={modalClass}
-			small={small}
-			{...rest}
-		>
+		<WordPressModal className={modalClass} {...rest}>
 			{children}
-		</EvergreenModal>
+		</WordPressModal>
 	);
 }

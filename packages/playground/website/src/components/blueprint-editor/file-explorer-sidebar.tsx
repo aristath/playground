@@ -1,4 +1,5 @@
-import { Icon, upload } from '../ui';
+import { Icon } from '@wordpress/components';
+import { upload } from '@wordpress/icons';
 import classNames from 'classnames';
 import {
 	useEffect,

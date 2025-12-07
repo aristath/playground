@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Button } from '../ui';
+import { Button } from '@wordpress/components';
 import { LogModal } from '../log-modal';
+import { useState } from '@wordpress/element';
 
 import css from './style.module.css';
 

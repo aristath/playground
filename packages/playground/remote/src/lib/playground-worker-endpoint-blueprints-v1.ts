@@ -442,6 +442,51 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		}
 		return super.getCMSModuleDetails();
 	}
+
+	override async hasCachedStaticFilesRemovedFromMinifiedBuild() {
+		// WordPress static asset functions don't apply to Drupal
+		if (this.currentCmsType === 'drupal') {
+			return false;
+		}
+		return super.hasCachedStaticFilesRemovedFromMinifiedBuild();
+	}
+
+	override async backfillStaticFilesRemovedFromMinifiedBuild() {
+		// WordPress static asset functions don't apply to Drupal
+		if (this.currentCmsType === 'drupal') {
+			return;
+		}
+		return super.backfillStaticFilesRemovedFromMinifiedBuild();
+	}
+
+	override async prefetchUpdateChecks() {
+		// WordPress update checks don't apply to Drupal
+		if (this.currentCmsType === 'drupal') {
+			return;
+		}
+		return super.prefetchUpdateChecks();
+	}
+
+	override async getWordPressModuleDetails() {
+		if (this.currentCmsType === 'drupal') {
+			return {
+				majorVersion: undefined,
+				staticAssetsDirectory: undefined,
+			};
+		}
+		return super.getWordPressModuleDetails();
+	}
+
+	override async getMinifiedWordPressVersions() {
+		if (this.currentCmsType === 'drupal') {
+			// Return Drupal version for Drupal sites
+			return {
+				all: { '9.5.11': 'drupal-9.5.11.zip' },
+				latest: '9.5.11',
+			} as any;
+		}
+		return super.getMinifiedWordPressVersions();
+	}
 }
 
 const [setApiReady, setAPIError] = exposeAPI(

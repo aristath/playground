@@ -22,6 +22,8 @@
 					"cp -r ./website-extras/* ./wasm-wordpress-net/",
 					"mkdir -p ./wasm-wordpress-net/drupal-9.5",
 					"cp ../../../packages/playground/drupal-builds/public/drupal-9.5.zip ./wasm-wordpress-net/drupal-9.5/",
+					"unzip -q ./wasm-wordpress-net/drupal-9.5/drupal-9.5.zip -d ./wasm-wordpress-net/drupal-9.5/",
+					"cd ./wasm-wordpress-net/drupal-9.5 && find . -type f \\( -name '*.css' -o -name '*.js' -o -name '*.gif' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.svg' -o -name '*.ico' -o -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.eot' -o -name '*.map' \\) | sed 's#^\\./##' > drupal-remote-asset-paths",
 					"cat ./remote/.htaccess ./website/.htaccess > ./wasm-wordpress-net/.htaccess",
 					"curl https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar > wasm-wordpress-net/wp-cli.phar",
 					"cat wasm-wordpress-net/wp-cli.phar | gzip -c -9 > wasm-wordpress-net/wp-cli.phar.gz"

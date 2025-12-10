@@ -1,7 +1,8 @@
 import { EmscriptenDownloadMonitor } from '@php-wasm/progress';
 import { exposeAPI } from '@php-wasm/web';
 import { PlaygroundWorkerEndpoint } from './playground-worker-endpoint';
-import { randomString } from '@php-wasm/util';
+import { randomString, joinPaths } from '@php-wasm/util';
+import { wordPressSiteUrl } from './config';
 import {
 	getSqliteDriverModuleDetails,
 	getWordPressModuleDetails,
@@ -43,6 +44,7 @@ class ArtifactExpiredError extends Error {
 
 class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 	private currentCmsType: 'wordpress' | 'drupal' = 'wordpress';
+	private loadedDrupalVersion: string | undefined;
 	private drupalNetworkTransport: DrupalFetchNetworkTransport | undefined;
 
 	constructor(monitor: EmscriptenDownloadMonitor) {
@@ -104,6 +106,9 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		this.booted = true;
 		this.scope = scope;
 		this.currentCmsType = cmsType;
+		if (cmsType === 'drupal') {
+			this.loadedDrupalVersion = drupalVersion;
+		}
 		console.log(
 			'🚀 [WORKER:boot] State set: booted=true, scope=',
 			scope,
@@ -135,6 +140,7 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 				withNetworking,
 				phpVersion: phpVersion!,
 				documentRoot: targetDocumentRoot,
+				cmsType,
 			});
 			console.log(
 				'🚀 [WORKER:boot] Request handler created, documentRoot:',
@@ -415,12 +421,53 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 		withNetworking: boolean,
 		knownRemoteAssetPaths: Set<string>
 	) {
-		// For Drupal, skip WordPress-specific logic (version detection, remote assets)
 		if (this.currentCmsType === 'drupal') {
-			console.log(
-				'🚀 [WORKER:finalizeAfterBoot] Drupal mode - skipping WordPress-specific logic'
+			const primaryPhp = await requestHandler.getPrimaryPhp();
+
+			// Fetch and populate Drupal remote asset paths
+			const drupalStaticAssetsDir = this.loadedDrupalVersion
+				? `drupal-${this.loadedDrupalVersion}`
+				: undefined;
+
+			const remoteAssetListPath = joinPaths(
+				requestHandler.documentRoot,
+				'drupal-remote-asset-paths'
 			);
-			// Just set the request handler, skip WordPress version detection
+
+			if (
+				drupalStaticAssetsDir &&
+				!primaryPhp.fileExists(remoteAssetListPath)
+			) {
+				const listUrl = new URL(
+					joinPaths(
+						drupalStaticAssetsDir,
+						'drupal-remote-asset-paths'
+					),
+					wordPressSiteUrl
+				);
+				try {
+					const remoteAssetPaths = await fetch(listUrl).then((res) =>
+						res.text()
+					);
+					primaryPhp.writeFile(remoteAssetListPath, remoteAssetPaths);
+				} catch {
+					console.warn(
+						`Failed to fetch Drupal remote asset paths from ${listUrl}`
+					);
+				}
+			}
+
+			if (primaryPhp.isFile(remoteAssetListPath)) {
+				const remoteAssetPaths = primaryPhp
+					.readFileAsText(remoteAssetListPath)
+					.split('\n');
+				remoteAssetPaths.forEach((drupalRelativePath: string) =>
+					knownRemoteAssetPaths.add(
+						joinPaths('/', drupalRelativePath)
+					)
+				);
+			}
+
 			this.__internal_setRequestHandler(requestHandler);
 			return;
 		}
@@ -436,7 +483,9 @@ class PlaygroundWorkerEndpointBlueprintsV1 extends PlaygroundWorkerEndpoint {
 	override async getCMSModuleDetails() {
 		if (this.currentCmsType === 'drupal') {
 			return {
-				staticAssetsDirectory: undefined,
+				staticAssetsDirectory: this.loadedDrupalVersion
+					? `drupal-${this.loadedDrupalVersion}`
+					: undefined,
 				cmsType: 'drupal' as const,
 			};
 		}

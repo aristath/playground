@@ -43,6 +43,7 @@ import {
 	getFileNotFoundActionForWordPress,
 	getLoadedWordPressVersion,
 } from '@wp-playground/wordpress';
+import { getFileNotFoundActionForDrupal } from '@wp-playground/drupal';
 import { wpVersionToStaticAssetsDirectory } from '@wp-playground/wordpress-builds';
 import { networkingDisabledFunctions } from './disabled-functions';
 /* @ts-ignore */
@@ -128,6 +129,7 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 		withNetworking,
 		phpVersion,
 		documentRoot,
+		cmsType = 'wordpress',
 	}: {
 		siteUrl: string;
 		sapiName: string;
@@ -137,6 +139,7 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 		withNetworking: boolean;
 		phpVersion: SupportedPHPVersion;
 		documentRoot?: string;
+		cmsType?: 'wordpress' | 'drupal';
 	}) {
 		const phpIniEntries: Record<string, string> = {
 			'openssl.cafile': '/internal/shared/ca-bundle.crt',
@@ -266,6 +269,10 @@ export abstract class PlaygroundWorkerEndpoint extends PHPWorker {
 						? relativeUri.substring(parsedSiteUrl.pathname.length)
 						: relativeUri;
 				if (!knownRemoteAssetPaths.has(siteRelativePath)) {
+					// Use the appropriate CMS-specific handler
+					if (cmsType === 'drupal') {
+						return getFileNotFoundActionForDrupal(siteRelativePath);
+					}
 					return getFileNotFoundActionForWordPress(siteRelativePath);
 				}
 				// This path is listed as a remote asset. Mark it as a static file
